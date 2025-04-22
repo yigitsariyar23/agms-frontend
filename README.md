@@ -1,36 +1,153 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend Developer Guide
 
-## Getting Started
+## 🚀 Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+- Git
+
+### Installation
+
+1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd agms-frontend
+```
+
+2. Install dependencies
+
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Create a `.env.local` file in the root directory
+
+```env
+NEXT_PUBLIC_API_URL=https://your-railway-app-url.up.railway.app
+```
+
+4. Start the development server
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework**: Next.js
+- **Authentication**: JWT (JSON Web Tokens)
+- **Deployment**: Vercel
+- **API Integration**: REST API with Spring Boot backend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📁 Project Structure
 
-## Learn More
+```
+src/
+├── app/                 # Next.js 13+ app directory
+├── components/          # Reusable React components
+├── lib/                 # Utility functions and API clients
+├── hooks/              # Custom React hooks
+├── types/              # TypeScript type definitions
+└── styles/             # Global styles and CSS modules
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 🔐 Authentication Flow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Login/Register
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. User submits credentials on `/login` or `/register`
+2. Frontend makes API call to backend
+3. On success, JWT is stored in localStorage
+4. User is redirected to dashboard
 
-## Deploy on Vercel
+### Protected Routes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Use the `useAuth` hook to check authentication status
+- Redirect unauthenticated users to login
+- Include JWT in API requests
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Logout
+
+- Clear JWT from localStorage
+- Redirect to login page
+
+## 🌐 API Integration
+
+### Making API Calls
+
+```typescript
+// Example API call with authentication
+const fetchData = async () => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/endpoint`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.json();
+};
+```
+
+## 🚀 Deployment
+
+### Vercel Deployment
+
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard:
+   - `NEXT_PUBLIC_API_URL`
+3. Deploy!
+
+### Environment Variables
+
+- `NEXT_PUBLIC_API_URL`: Backend API URL (Railway)
+- Add other environment variables as needed
+
+## 🔒 Security Best Practices
+
+1. Never store sensitive information in localStorage (except JWT)
+2. Always use HTTPS for API calls
+3. Implement proper error handling
+4. Sanitize user inputs
+5. Use environment variables for sensitive data
+
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+npm run test
+# or
+yarn test
+```
+
+## 📝 Code Style Guide
+
+- Use TypeScript for type safety
+- Follow ESLint rules
+- Use Prettier for code formatting
+- Write meaningful commit messages
+
+## 🐛 Debugging
+
+1. Use browser DevTools
+2. Check Network tab for API calls
+3. Use console.log() for debugging
+4. Check localStorage for token presence
+
+## 📚 Additional Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+- [JWT.io](https://jwt.io)
+- [Vercel Documentation](https://vercel.com/docs)
