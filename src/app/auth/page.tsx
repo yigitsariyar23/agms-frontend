@@ -3,7 +3,6 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link" // Keep for external links if needed, but internal switching will use buttons
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { Button } from "@/components/ui/button"
@@ -263,7 +262,7 @@ export default function AuthPage() {
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
-              Enter your email address below. If an account exists, we'll send you instructions to reset your password.
+              Enter your email address below. If an account exists, we&apos;ll send you instructions to reset your password.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleResetModalSubmit} className="space-y-4 py-4">

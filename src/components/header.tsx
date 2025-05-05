@@ -1,30 +1,10 @@
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { MenuIcon, X } from "lucide-react"
 import { useState } from "react"
 import { useAuth } from "@/lib/contexts/auth-context"
-
-interface NavItemProps {
-  href: string
-  title: string
-  active?: boolean
-}
-
-const NavItem = ({ href, title, active }: NavItemProps) => {
-  return (
-    <Link 
-      href={href}
-      className={cn(
-        "text-sm font-medium transition-colors hover:text-primary/80",
-        active ? "text-primary" : "text-muted-foreground"
-      )}
-    >
-      {title}
-    </Link>
-  )
-}
+import Image from "next/image"
 
 interface HeaderProps {
   className?: string
@@ -40,27 +20,23 @@ export function Header({ className }: HeaderProps) {
         {/* Left: Logo and AGMS */}
         <div className="flex items-center px-6 gap-2">
           <Link href="/" className="flex items-center space-x-6 hover:cursor-pointer">
-            <img src="/iyte-logo.png" alt="IYTE Logo" className="h-8 w-8 object-contain" />
+            <Image src="/iyte-logo.png" alt="IYTE Logo" className="h-8 w-8 object-contain" width={32} height={32} />
             <span className="font-bold text-xl">AGMS</span>
           </Link>
         </div>
 
         {/* Right: Username and Logout */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 translate-x-36">
           {user && (
             <>
               <div className="flex flex-col items-end">
-                <span className="font-medium hover:cursor-pointer">{user.name}</span>
+                <span className="font-medium">{user.firstName} {user.lastName}</span>
                 <span className="text-xs text-muted-foreground">{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}</span>
               </div>
               <Button onClick={logout} className="hover:cursor-pointer">Log Out</Button>
             </>
           )}
         </div>
-
-
-        
-
 
         {/* Mobile Menu Button */}
         <Button 

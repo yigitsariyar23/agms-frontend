@@ -26,31 +26,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      // Implement your login logic here
-      // This is where you would typically make an API call to your backend
       setLoading(true);
-      // Mock login for now - replace with actual API call and response handling
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
-      
-      // Example: Check credentials (replace with actual backend check)
-      if (password === "123123") { // Example success condition
+      // Check if backend is available
+      try {
+        const response = await fetch('http://localhost:8080/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Create a default user if the backend doesn't return user data
           setUser({
-            id: '1',
+            id: data.id || '1',
             email,
-            name: 'Test User',
-            role: 'student'
+            firstName: data.firstName || email,
+            lastName: data.lastName || email,
+            role: data.role || 'student'
           });
-          return { success: true, message: "Login successful!" };
-      } else {
-          return { success: false, message: "Invalid credentials (simulated)." };
+          return { success: true, message: data.message || "Login successful!" };
+        } else {
+          return { success: false, message: data.message || "Login failed" };
+        }
+      } catch (networkError) {
+        console.error('Network error:', networkError);
+        return { 
+          success: false, 
+          message: "Cannot connect to the server. Please ensure the backend server is running at http://localhost:8080."
+        };
       }
-
     } catch (error) {
       console.error('Login failed:', error);
-      // Return error state
-      return { success: false, message: "Login failed due to an unexpected error." }; 
-      // Optionally rethrow if the caller should handle it differently
-      // throw error; 
+      return { success: false, message: "Login failed due to an unexpected error." };
     } finally {
       setLoading(false);
     }
