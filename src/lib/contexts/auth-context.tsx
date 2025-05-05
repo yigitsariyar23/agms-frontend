@@ -1,12 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
+import { User } from '../types/user';
 
 interface AuthContextType {
   user: User | null;
@@ -38,11 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
       
       // Example: Check credentials (replace with actual backend check)
-      if (password === "password123") { // Example success condition
+      if (password === "123123") { // Example success condition
           setUser({
             id: '1',
             email,
-            name: 'Test User'
+            name: 'Test User',
+            role: 'student'
           });
           return { success: true, message: "Login successful!" };
       } else {

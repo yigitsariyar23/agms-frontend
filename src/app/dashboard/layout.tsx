@@ -4,18 +4,23 @@ import type React from "react"
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
-import { DashboardSidebar } from "@/components/dashboard/sidebar"
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { Loader2 } from "lucide-react"
+import { useAuth } from "@/lib/contexts/auth-context"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Info, Loader2 } from "lucide-react"
+import StudentDashboard from "./student/dashboard-content"
+import AdvisorDashboard from "./advisor/dashboard-content"
+import DepartmentSecretaryDashboard from "./department_secretary/dashboard-content"
+import DeansOfficeDashboard from "./deans_office/dashboard-content" 
+import StudentAffairsDashboard from "./student_affairs/dashboard-content"
+import Header from "@/components/header"
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout() {
   const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login")
+      router.push("/auth?tab=login")
     }
   }, [user, loading, router])
 
@@ -31,23 +36,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null
   }
 
+  // Render the dashboard based on user role
+  const renderDashboard = () => {
+    switch (user.role) {
+      case "student":
+        return <StudentDashboard />
+      case "advisor":
+        return <AdvisorDashboard />
+      case "department_secretary":
+        return <DepartmentSecretaryDashboard />
+      case "deans_office":
+        return <DeansOfficeDashboard />
+      case "student_affairs":
+        return <StudentAffairsDashboard />
+      default:
+        return (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Welcome to AGMS</AlertTitle>
+            <AlertDescription>Your role-specific dashboard is not available. Please contact support.</AlertDescription>
+          </Alert>
+        )
+    }
+  }
+
   return (
-    <SidebarProvider>
-      <div className="flex h-screen">
-        <DashboardSidebar />
-        <SidebarInset className="flex flex-col">
-          <header className="flex h-16 items-center border-b px-4">
-            <SidebarTrigger />
-            <div className="ml-4">
-              <h1 className="text-xl font-semibold">Dashboard</h1>
-            </div>
-            <div className="ml-auto flex items-center space-x-4">
-              <span className="text-sm font-medium">{user.name}</span>
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto p-6">{children}</main>
-        </SidebarInset>
+    <div>
+      <div className="space-y-6">
+        <Header />
+        {renderDashboard()}
       </div>
-    </SidebarProvider>
+    </div>
   )
 }
