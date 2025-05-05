@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link" // Keep for external links if needed, but internal switching will use buttons
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/auth-context"
@@ -11,13 +11,29 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Loader2 } from "lucide-react"
 
-// Define the possible views
-type AuthView = "login" | "register" | "reset-password"
+// Define the possible main views
+type AuthView = "login" | "register"
 
 export default function AuthPage() {
-  const [view, setView] = useState<AuthView>("login")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialView = searchParams.get("tab") === "register" ? "register" : "login" // Default to login
+
+  const [view, setView] = useState<AuthView>(initialView)
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false)
+
+  // Effect to update view state if URL changes externally (e.g., back button)
+  useEffect(() => {
+    const tab = searchParams.get("tab")
+    const newView = tab === "register" ? "register" : "login"
+    if (newView !== view) {
+        setView(newView)
+    }
+    // Only run when searchParams changes, not view
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- State for all forms (prefix to avoid conflicts) ---
   // Login
@@ -34,15 +50,14 @@ export default function AuthPage() {
   const [registerError, setRegisterError] = useState("")
   const [registerIsLoading, setRegisterIsLoading] = useState(false)
 
-  // Reset Password
+  // Reset Password (for modal)
   const [resetEmail, setResetEmail] = useState("")
-  const [resetError, setResetError] = useState("") // Optional: Add error state for reset
-  const [resetIsLoading, setResetIsLoading] = useState(false) // Optional: Add loading state
-  const [resetMessage, setResetMessage] = useState("") // Optional: For success/info messages
+  const [resetError, setResetError] = useState("")
+  const [resetIsLoading, setResetIsLoading] = useState(false)
+  const [resetMessage, setResetMessage] = useState("")
 
   // --- Hooks ---
   const { login, register } = useAuth()
-  const router = useRouter()
 
   // --- Validation Functions (from register page) ---
   const validateEmailFormat = (email: string): boolean => {
@@ -95,14 +110,14 @@ export default function AuthPage() {
     try {
       const result = await register(registerEmail, registerPassword, registerName)
       if (result.success) {
-        // Switch to login view after successful registration
-        setView("login") 
+        // Switch to login view by updating URL
+        router.push("/auth?tab=login")
+        setView("login") // Update state directly for immediate UI change
         // Clear registration form fields
         setRegisterName("")
         setRegisterEmail("")
         setRegisterPassword("")
         setRegisterConfirmPassword("")
-        // Optionally show a success message on the login form? Or rely on context message?
       } else {
         setRegisterError(result.message)
       }
@@ -113,7 +128,8 @@ export default function AuthPage() {
     }
   }
 
-  const handleResetSubmit = async (e: React.FormEvent) => {
+  // Renamed to indicate it's for the modal
+  const handleResetModalSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setResetError("")
     setResetMessage("")
@@ -121,16 +137,21 @@ export default function AuthPage() {
     console.log("Password reset submitted for:", resetEmail)
     // TODO: Implement actual password reset API call
     try {
-        // Simulate API Call
-        await new Promise(resolve => setTimeout(resolve, 1000)); 
-        // Assume success for now
+        await new Promise(resolve => setTimeout(resolve, 1000));
         setResetMessage("If an account exists for this email, reset instructions have been sent.")
-        setResetEmail("") // Clear field on success
+        setResetEmail("")
+        // Maybe close modal automatically after a delay? Or let user close.
     } catch (err) {
         setResetError("An error occurred while sending reset instructions.")
     } finally {
         setResetIsLoading(false)
     }
+  }
+
+  // Function to handle view switching via URL
+  const switchView = (newView: AuthView) => {
+      router.push(`/auth?tab=${newView}`);
+      // setView(newView); // Let useEffect handle state update based on URL change
   }
 
   // --- Render Logic ---
@@ -175,50 +196,12 @@ export default function AuthPage() {
             <CardFooter>
               <p className="w-full text-center text-sm text-gray-600">
                 Already have an account?{" "}
-                <Button variant="link" className="p-0 h-auto font-medium text-primary hover:underline" onClick={() => setView("login")}>
+                <Button variant="link" className="p-0 h-auto font-medium text-primary hover:underline" onClick={() => switchView("login")}>
                   Login
                 </Button>
               </p>
             </CardFooter>
           </motion.div>
-        )
-      case "reset-password":
-        return (
-           <motion.div key="reset" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
-              <CardDescription>Enter your email to receive reset instructions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {resetError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{resetError}</AlertDescription>
-                </Alert>
-              )}
-              {resetMessage && (
-                 <Alert variant="default" className="mb-4 border-green-500 text-green-700">
-                   <AlertDescription>{resetMessage}</AlertDescription>
-                 </Alert>
-               )}
-              <form onSubmit={handleResetSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">Email</Label>
-                  <Input id="reset-email" type="email" placeholder="your.email@iyte.edu.tr" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
-                </div>
-                <Button type="submit" className="w-full" disabled={resetIsLoading}>
-                   {resetIsLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</> : "Send Reset Instructions"}
-                </Button>
-              </form>
-            </CardContent>
-            <CardFooter>
-              <p className="w-full text-center text-sm text-gray-600">
-                 Remembered your password?{" "}
-                <Button variant="link" className="p-0 h-auto font-medium text-primary hover:underline" onClick={() => setView("login")}>
-                   Login
-                </Button>
-              </p>
-             </CardFooter>
-           </motion.div>
         )
       case "login":
       default:
@@ -242,7 +225,7 @@ export default function AuthPage() {
                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="login-password">Password</Label>
-                        <Button variant="link" className="p-0 h-auto text-sm text-gray-600 hover:text-gray-900" onClick={() => setView("reset-password")}>
+                        <Button type="button" variant="link" className="p-0 h-auto text-sm text-gray-600 hover:text-gray-900" onClick={() => setIsResetModalOpen(true)}>
                             Forgot password?
                         </Button>
                     </div>
@@ -256,7 +239,7 @@ export default function AuthPage() {
             <CardFooter>
               <p className="w-full text-center text-sm text-gray-600">
                  Don&apos;t have an account?{" "}
-                 <Button variant="link" className="p-0 h-auto font-medium text-primary hover:underline" onClick={() => setView("register")}>
+                 <Button variant="link" className="p-0 h-auto font-medium text-primary hover:underline" onClick={() => switchView("register")}>
                    Register
                  </Button>
                </p>
@@ -273,6 +256,55 @@ export default function AuthPage() {
           {renderForm()}
         </AnimatePresence>
       </Card>
+
+      {/* Reset Password Modal */}
+      <Dialog open={isResetModalOpen} onOpenChange={setIsResetModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address below. If an account exists, we'll send you instructions to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleResetModalSubmit} className="space-y-4 py-4">
+             {resetError && (
+                 <Alert variant="destructive" className="mb-4">
+                   <AlertDescription>{resetError}</AlertDescription>
+                 </Alert>
+               )}
+               {resetMessage && (
+                  <Alert variant="default" className="mb-4 border-green-500 text-green-700">
+                    <AlertDescription>{resetMessage}</AlertDescription>
+                  </Alert>
+                )}
+             {!resetMessage && ( // Only show form if no success message
+                 <div className="space-y-2">
+                     <Label htmlFor="reset-modal-email">Email</Label>
+                     <Input 
+                         id="reset-modal-email" 
+                         type="email" 
+                         placeholder="your.email@iyte.edu.tr" 
+                         value={resetEmail} 
+                         onChange={(e) => setResetEmail(e.target.value)} 
+                         required 
+                     />
+                 </div>
+             )}
+             <DialogFooter>
+                {/* Show close button after success message, otherwise show submit */}
+                {resetMessage ? (
+                    <DialogClose asChild>
+                         <Button type="button">Close</Button>
+                     </DialogClose>
+                ) : (
+                    <Button type="submit" disabled={resetIsLoading}>
+                        {resetIsLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</> : "Send Instructions"}
+                    </Button>
+                )}
+             </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
