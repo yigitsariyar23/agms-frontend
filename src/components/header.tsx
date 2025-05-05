@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { MenuIcon, X } from "lucide-react"
 import { useState } from "react"
+import { useAuth } from "@/lib/contexts/auth-context"
 
 interface NavItemProps {
   href: string
@@ -31,43 +32,35 @@ interface HeaderProps {
 
 export function Header({ className }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user, logout } = useAuth();
 
   return (
     <header className={cn("w-full border-b bg-background", className)}>
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center space-x-2">
-            {/* Logo can be added here */}
+        {/* Left: Logo and AGMS */}
+        <div className="flex items-center px-6 gap-2">
+          <Link href="/" className="flex items-center space-x-6 hover:cursor-pointer">
+            <img src="/iyte-logo.png" alt="IYTE Logo" className="h-8 w-8 object-contain" />
             <span className="font-bold text-xl">AGMS</span>
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          <NavItem href="/dashboard" title="Dashboard" />
-          <NavItem href="/dashboard/students" title="Students" />
-          <NavItem href="/dashboard/courses" title="Courses" />
-          <NavItem href="/dashboard/reports" title="Reports" />
-        </nav>
-        
-        {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <span className="sr-only">Profile</span>
-                  <span className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                    U
-                  </span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Your Profile</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        {/* Right: Username and Logout */}
+        <div className="flex items-center gap-4">
+          {user && (
+            <>
+              <div className="flex flex-col items-end">
+                <span className="font-medium hover:cursor-pointer">{user.name}</span>
+                <span className="text-xs text-muted-foreground">{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}</span>
+              </div>
+              <Button onClick={logout} className="hover:cursor-pointer">Log Out</Button>
+            </>
+          )}
         </div>
+
+
+        
+
 
         {/* Mobile Menu Button */}
         <Button 
@@ -86,24 +79,7 @@ export function Header({ className }: HeaderProps) {
       </div>
 
       {/* Mobile Navigation */}
-      {mobileMenuOpen && (
-        <div className="md:hidden py-4 container border-t">
-          <nav className="flex flex-col space-y-4">
-            <NavItem href="/dashboard" title="Dashboard" />
-            <NavItem href="/dashboard/students" title="Students" />
-            <NavItem href="/dashboard/courses" title="Courses" />
-            <NavItem href="/dashboard/reports" title="Reports" />
-            <div className="pt-2">
-              <Button variant="outline" className="w-full justify-start">
-                <span className="mr-2 h-4 w-4 rounded-full bg-muted flex items-center justify-center">
-                  U
-                </span>
-                <span>Profile</span>
-              </Button>
-            </div>
-          </nav>
-        </div>
-      )}
+      
     </header>
   )
 }
