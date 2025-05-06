@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,8 +12,29 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Loader2 } from "lucide-react"
 import { LoginContents } from "./contents/login-contents"
 
+// Temporary mock function to simulate API call
+const mockResetPasswordRequest = async (email: string): Promise<{ success: boolean; message: string }> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  
+  // Simulate validation
+  if (!email.includes('@iyte.edu.tr') && !email.includes('@std.iyte.edu.tr')) {
+    return {
+      success: false,
+      message: "Please use a valid IYTE email address"
+    }
+  }
+
+  // Simulate successful request
+  return {
+    success: true,
+    message: "If an account exists for this email, reset instructions have been sent."
+  }
+}
+
 export default function AuthPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isResetModalOpen, setIsResetModalOpen] = useState(false)
 
   // Reset Password (for modal)
@@ -22,6 +43,19 @@ export default function AuthPage() {
   const [resetIsLoading, setResetIsLoading] = useState(false)
   const [resetMessage, setResetMessage] = useState("")
 
+  // Reset modal state when it closes
+  useEffect(() => {
+    if (!isResetModalOpen) {
+      // Clear form state after a short delay to allow for animations
+      const timer = setTimeout(() => {
+        setResetEmail("")
+        setResetError("")
+        setResetMessage("")
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [isResetModalOpen])
+
   const handleResetModalSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setResetError("")
@@ -29,25 +63,17 @@ export default function AuthPage() {
     setResetIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: resetEmail }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to send reset instructions")
+      const result = await mockResetPasswordRequest(resetEmail)
+      
+      if (result.success) {
+        setResetMessage(result.message)
+        setResetEmail("")
+      } else {
+        setResetError(result.message)
       }
-
-      setResetMessage(data.message)
-      setResetEmail("")
     } catch (error) {
       console.error("Reset password error:", error)
-      setResetError(error instanceof Error ? error.message : "An error occurred while sending reset instructions")
+      setResetError("An error occurred while sending reset instructions.")
     } finally {
       setResetIsLoading(false)
     }
@@ -69,7 +95,7 @@ export default function AuthPage() {
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
-              Enter your email address below. If an account exists, we&apos;ll send you instructions to reset your password.
+              Enter your IYTE email address below. If an account exists, we&apos;ll send you instructions to reset your password.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleResetModalSubmit} className="space-y-4 py-4">
@@ -94,6 +120,9 @@ export default function AuthPage() {
                   onChange={(e) => setResetEmail(e.target.value)} 
                   required 
                 />
+                <p className="text-xs text-gray-500">
+                  Please use your IYTE email address (@iyte.edu.tr or @std.iyte.edu.tr)
+                </p>
               </div>
             )}
             <DialogFooter>
