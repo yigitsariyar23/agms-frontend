@@ -12,11 +12,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 
 interface LoginContentsProps {
-  onSwitchView: () => void
   onOpenResetModal: () => void
 }
 
-export function LoginContents({ onSwitchView, onOpenResetModal }: LoginContentsProps) {
+export function LoginContents({ onOpenResetModal }: LoginContentsProps) {
   const router = useRouter()
   const { login } = useAuth()
 
@@ -93,18 +92,6 @@ export function LoginContents({ onSwitchView, onOpenResetModal }: LoginContentsP
           </Button>
         </form>
       </CardContent>
-      <CardFooter>
-        <p className="w-full text-center text-sm text-gray-600">
-          Don&apos;t have an account?{" "}
-          <Button 
-            variant="link" 
-            className="p-0 h-auto font-medium text-primary hover:underline" 
-            onClick={onSwitchView}
-          >
-            Register
-          </Button>
-        </p>
-      </CardFooter>
     </motion.div>
   )
 }
