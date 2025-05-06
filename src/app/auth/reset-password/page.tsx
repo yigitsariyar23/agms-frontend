@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,20 +9,36 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 
-// Temporary mock function to simulate API call
-const mockValidateToken = async (token: string): Promise<{ valid: boolean }> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  // For testing, consider any non-empty token as valid
-  return { valid: token.length > 0 }
-}
 
-const mockResetPassword = async (token: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  return {
-    success: true,
-    message: "Password has been reset successfully. You can now login with your new password."
+const resetPassword = async (token: string, newPassword: string) => {
+  try {
+    const response = await fetch('http://localhost:8080/api/auth/reset-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        password: newPassword
+      }),
+    })
+
+    const data = await response.json()
+    
+    if (response.ok) {
+      return { 
+        success: true, 
+        message: data.message || "Password has been reset successfully. Redirecting to login..."
+      }
+    } else {
+      return { 
+        success: false, 
+        message: data.message || "Failed to reset password. Please try again."
+      }
+    }
+  } catch (error) {
+    console.error("Reset password error:", error)
+    throw error
   }
 }
 
@@ -31,8 +47,6 @@ export default function ResetPasswordPage() {
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
 
-  const [isValidating, setIsValidating] = useState(true)
-  const [isTokenValid, setIsTokenValid] = useState(false)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
@@ -42,27 +56,6 @@ export default function ResetPasswordPage() {
   // Password validation regex
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
 
-  useEffect(() => {
-    const validateToken = async () => {
-      if (!token) {
-        setIsValidating(false)
-        setIsTokenValid(false)
-        return
-      }
-
-      try {
-        const result = await mockValidateToken(token)
-        setIsTokenValid(result.valid)
-      } catch (error) {
-        console.error("Token validation error:", error)
-        setIsTokenValid(false)
-      } finally {
-        setIsValidating(false)
-      }
-    }
-
-    validateToken()
-  }, [token])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,9 +74,14 @@ export default function ResetPasswordPage() {
       return
     }
 
+    if (!token) {
+      setError("Reset token is missing")
+      return
+    }
+
     setIsLoading(true)
     try {
-      const result = await mockResetPassword(token!, newPassword)
+      const result = await resetPassword(token, newPassword)
       if (result.success) {
         setSuccess(result.message)
         // Redirect to login after 3 seconds
@@ -101,37 +99,37 @@ export default function ResetPasswordPage() {
     }
   }
 
-  if (isValidating) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  // if (isValidating) {
+  //   return (
+  //     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+  //       <Card className="w-full max-w-md">
+  //         <CardContent className="flex items-center justify-center py-8">
+  //           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  //         </CardContent>
+  //       </Card>
+  //     </div>
+  //   )
+  // }
 
-  if (!isTokenValid) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Link Expired</CardTitle>
-            <CardDescription className="text-center">
-              This password reset link has expired or is invalid. Please request a new password reset link.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button onClick={() => router.push("/auth")}>
-              Return to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  // if (!isTokenValid) {
+  //   return (
+  //     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+  //       <Card className="w-full max-w-md">
+  //         <CardHeader>
+  //           <CardTitle className="text-2xl font-bold text-center">Link Expired</CardTitle>
+  //           <CardDescription className="text-center">
+  //             This password reset link has expired or is invalid. Please request a new password reset link.
+  //           </CardDescription>
+  //         </CardHeader>
+  //         <CardContent className="flex justify-center">
+  //           <Button onClick={() => router.push("/auth")}>
+  //             Return to Login
+  //           </Button>
+  //         </CardContent>
+  //       </Card>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
