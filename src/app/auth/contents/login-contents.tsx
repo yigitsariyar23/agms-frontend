@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card"
+import { CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 
@@ -17,12 +17,22 @@ interface LoginContentsProps {
 
 export function LoginContents({ onOpenResetModal }: LoginContentsProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login } = useAuth()
-
+  
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
   const [loginError, setLoginError] = useState("")
   const [loginIsLoading, setLoginIsLoading] = useState(false)
+  const [callbackUrl, setCallbackUrl] = useState("/dashboard")
+  
+  // Get the callback URL from search params (set by middleware when redirecting)
+  useEffect(() => {
+    const callback = searchParams.get("callbackUrl")
+    if (callback) {
+      setCallbackUrl(callback)
+    }
+  }, [searchParams])
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,7 +41,8 @@ export function LoginContents({ onOpenResetModal }: LoginContentsProps) {
     try {
       const result = await login(loginEmail, loginPassword)
       if (result.success) {
-        router.push("/dashboard")
+        // Redirect to the callback URL if login is successful
+        router.push(callbackUrl)
       } else {
         setLoginError(result.message)
       }

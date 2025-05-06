@@ -1,8 +1,6 @@
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { MenuIcon, X } from "lucide-react"
-import { useState } from "react"
 import { useAuth } from "@/lib/contexts/auth-context"
 import Image from "next/image"
 
@@ -11,7 +9,6 @@ interface HeaderProps {
 }
 
 export function Header({ className }: HeaderProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user, logout } = useAuth();
 
   return (
@@ -37,25 +34,7 @@ export function Header({ className }: HeaderProps) {
             </>
           )}
         </div>
-
-        {/* Mobile Menu Button */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="md:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <MenuIcon className="h-5 w-5" />
-          )}
-          <span className="sr-only">Toggle menu</span>
-        </Button>
       </div>
-
-      {/* Mobile Navigation */}
-      
     </header>
   )
 }

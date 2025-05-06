@@ -12,7 +12,7 @@ import AdvisorDashboard from "./contents/advisor/dashboard-content"
 import DepartmentSecretaryDashboard from "./contents/department_secretary/dashboard-content"
 import DeansOfficeDashboard from "./contents/deans_office/dashboard-content" 
 import StudentAffairsDashboard from "./contents/student_affairs/dashboard-content"
-import Header from "@/components/header"
+import Header from "@/components/shared/header"
 
 export default function DashboardLayout() {
   const { user, loading } = useAuth()

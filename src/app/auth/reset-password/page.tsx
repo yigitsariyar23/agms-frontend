@@ -46,6 +46,7 @@ export default function ResetPasswordPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
+  const tokenValid = !!token
 
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -111,25 +112,25 @@ export default function ResetPasswordPage() {
   //   )
   // }
 
-  // if (!isTokenValid) {
-  //   return (
-  //     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-  //       <Card className="w-full max-w-md">
-  //         <CardHeader>
-  //           <CardTitle className="text-2xl font-bold text-center">Link Expired</CardTitle>
-  //           <CardDescription className="text-center">
-  //             This password reset link has expired or is invalid. Please request a new password reset link.
-  //           </CardDescription>
-  //         </CardHeader>
-  //         <CardContent className="flex justify-center">
-  //           <Button onClick={() => router.push("/auth")}>
-  //             Return to Login
-  //           </Button>
-  //         </CardContent>
-  //       </Card>
-  //     </div>
-  //   )
-  // }
+  if (!tokenValid) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">Invalid Session</CardTitle>
+            <CardDescription className="text-center">
+              This password reset link is invalid or has expired. Please request a new password reset link.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Button onClick={() => router.push("/auth")}>
+              Return to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
