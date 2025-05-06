@@ -20,7 +20,7 @@ export function Header({ className }: HeaderProps) {
         {/* Left: Logo and AGMS */}
         <div className="flex items-center px-6 gap-2">
           <Link href="/" className="flex items-center space-x-6 hover:cursor-pointer">
-            <Image src="/iyte-logo.png" alt="IYTE Logo" className="h-8 w-8 object-contain" width={32} height={32} />
+            <Image src="/iyte-logo.png" alt="IYTE Logo" className="h-12 w-12 object-contain" width={360} height={360} />
             <span className="font-bold text-xl">AGMS</span>
           </Link>
         </div>
