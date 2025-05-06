@@ -16,10 +16,10 @@ const resetPassword = async (token: string, newPassword: string) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        password: newPassword
+        newPassword: newPassword,
+        token: token
       }),
     })
 
