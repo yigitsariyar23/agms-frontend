@@ -84,18 +84,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, name: string): Promise<{ success: boolean; message: string }> => {
-    // TODO: Implement actual registration API call
-    console.log("Registering:", { email, name });
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
-
-    // Simulate success - replace with actual API response handling
-    // Example: Check if email already exists, handle backend errors, etc.
-    if (email.includes("fail")) { // Example failure condition
-      return { success: false, message: "Registration failed (simulated)." };
+    try {
+      setLoading(true);
+      // Check if backend is available
+      try {
+        const response = await fetch('http://localhost:8080/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Create a default user if the backend doesn't return user data
+          setUser({
+            id: data.id || '1',
+            email,
+            firstName: data.firstName || email,
+            lastName: data.lastName || email,
+            role: data.role || 'student'
+          });
+          return { success: true, message: data.message || "Login successful!" };
+        } else {
+          return { success: false, message: data.message || "Login failed" };
+        }
+      } catch (networkError) {
+        console.error('Network error:', networkError);
+        return { 
+          success: false, 
+          message: "Cannot connect to the server. Please ensure the backend server is running at http://localhost:8080."
+        };
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      return { success: false, message: "Login failed due to an unexpected error." };
+    } finally {
+      setLoading(false);
     }
-
-    return { success: true, message: "Registration successful!" };
   };
 
   const value = {

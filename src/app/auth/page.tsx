@@ -42,7 +42,8 @@ export default function AuthPage() {
   const [loginIsLoading, setLoginIsLoading] = useState(false)
 
   // Register
-  const [registerName, setRegisterName] = useState("")
+  const [registerFirstName, setRegisterFirstName] = useState("")
+  const [registerLastName, setRegisterLastName] = useState("")
   const [registerEmail, setRegisterEmail] = useState("")
   const [registerPassword, setRegisterPassword] = useState("")
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("")
@@ -81,7 +82,8 @@ export default function AuthPage() {
       } else {
         setLoginError(result.message)
       }
-    } catch (err) {
+    } catch (error) {
+      console.error("Login error:", error)
       setLoginError("An unexpected error occurred during login")
     } finally {
       setLoginIsLoading(false)
@@ -107,20 +109,22 @@ export default function AuthPage() {
 
     setRegisterIsLoading(true)
     try {
-      const result = await register(registerEmail, registerPassword, registerName)
+      const result = await register(registerEmail, registerPassword, `${registerFirstName} ${registerLastName}`)
       if (result.success) {
         // Switch to login view by updating URL
         router.push("/auth?tab=login")
         setView("login") // Update state directly for immediate UI change
         // Clear registration form fields
-        setRegisterName("")
+        setRegisterFirstName("")
+        setRegisterLastName("")
         setRegisterEmail("")
         setRegisterPassword("")
         setRegisterConfirmPassword("")
       } else {
         setRegisterError(result.message)
       }
-    } catch (err) {
+    } catch (error) {
+      console.error("Registration error:", error)
       setRegisterError("An unexpected error occurred during registration")
     } finally {
       setRegisterIsLoading(false)
@@ -140,7 +144,8 @@ export default function AuthPage() {
         setResetMessage("If an account exists for this email, reset instructions have been sent.")
         setResetEmail("")
         // Maybe close modal automatically after a delay? Or let user close.
-    } catch (err) {
+    } catch (error) {
+        console.error("Reset password error:", error)
         setResetError("An error occurred while sending reset instructions.")
     } finally {
         setResetIsLoading(false)
@@ -171,8 +176,12 @@ export default function AuthPage() {
               )}
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
                  <div className="space-y-2">
-                   <Label htmlFor="register-name">Full Name</Label>
-                   <Input id="register-name" value={registerName} onChange={(e) => setRegisterName(e.target.value)} required />
+                   <Label htmlFor="register-firstName">First Name</Label>
+                   <Input id="register-firstName" value={registerFirstName} onChange={(e) => setRegisterFirstName(e.target.value)} required />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="register-lastName">Last Name</Label>
+                   <Input id="register-lastName" value={registerLastName} onChange={(e) => setRegisterLastName(e.target.value)} required />
                  </div>
                  <div className="space-y-2">
                     <Label htmlFor="register-email">Email</Label>
