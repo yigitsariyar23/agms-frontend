@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/contexts/auth-context"
 import Image from "next/image"
 import { useUser } from "@/lib/contexts/user-context";
+import { LogoutConfirmDialog } from "./logout-confirm-dialog";
+
 interface HeaderProps {
   className?: string
 }
 
 export function Header({ className }: HeaderProps) {
-  const { user, logout } = useAuth();
+  const { user, confirmLogout } = useAuth();
   const { userProfile } = useUser();
 
   return (
@@ -33,7 +35,8 @@ export function Header({ className }: HeaderProps) {
                   {userProfile?.role ? userProfile.role.replace('ROLE_', '').charAt(0).toUpperCase() + userProfile.role.replace('ROLE_', '').slice(1).toLowerCase() : ''}
                 </span>
               </div>
-              <Button onClick={logout} className="hover:cursor-pointer">Log Out</Button>
+              <Button onClick={confirmLogout} className="hover:cursor-pointer">Log Out</Button>
+              <LogoutConfirmDialog />
             </>
           )}
         </div>

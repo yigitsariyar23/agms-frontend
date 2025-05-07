@@ -25,6 +25,7 @@ export function LoginContents({ onOpenResetModal }: LoginContentsProps) {
   const [loginError, setLoginError] = useState("")
   const [loginIsLoading, setLoginIsLoading] = useState(false)
   const [callbackUrl, setCallbackUrl] = useState("/dashboard")
+  const [emailError, setEmailError] = useState("")
   
   // Get the callback URL from search params (set by middleware when redirecting)
   useEffect(() => {
@@ -37,6 +38,16 @@ export function LoginContents({ onOpenResetModal }: LoginContentsProps) {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoginError("")
+    
+    // Validate email domain
+    const validDomains = ["@iyte.edu.tr", "@std.iyte.edu.tr"]
+    const isValidEmail = validDomains.some(domain => loginEmail.endsWith(domain))
+    
+    if (!isValidEmail) {
+      setEmailError("Invalid email. Please try again.")
+      return
+    }
+    
     setLoginIsLoading(true)
     try {
       const result = await login(loginEmail, loginPassword)
@@ -47,8 +58,13 @@ export function LoginContents({ onOpenResetModal }: LoginContentsProps) {
         setLoginError(result.message)
       }
     } catch (error) {
-      console.error("Login error:", error)
-      setLoginError("An unexpected error occurred during login")
+      // Handle network or unexpected errors
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+      if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+        setLoginError("Invalid password. Please try again.")
+      } else {
+        setLoginError("An unexpected error occurred during login")
+      }
     } finally {
       setLoginIsLoading(false)
     }
@@ -74,9 +90,16 @@ export function LoginContents({ onOpenResetModal }: LoginContentsProps) {
               type="email" 
               placeholder="your.email@iyte.edu.tr" 
               value={loginEmail} 
-              onChange={(e) => setLoginEmail(e.target.value)} 
+              onChange={(e) => {
+                setLoginEmail(e.target.value);
+                setEmailError("");
+              }} 
               required 
+              className={emailError ? "border-red-500" : ""}
             />
+            {emailError && (
+              <p className="text-sm text-red-500 mt-1">{emailError}</p>
+            )}
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">

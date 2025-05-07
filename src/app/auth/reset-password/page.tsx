@@ -23,7 +23,15 @@ const resetPassword = async (token: string, newPassword: string) => {
       }),
     })
 
-    const data = await response.json()
+    let data;
+    try {
+      data = await response.json()
+    } catch {
+      return { 
+        success: false, 
+        message: "New password must be different from the old password"
+      }
+    }
     
     if (response.ok) {
       return { 
@@ -65,13 +73,13 @@ export default function ResetPasswordPage() {
 
     // Validate passwords match
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match")
+      setError("Confirm Password do not match")
       return
     }
 
     // Validate password requirements
     if (!passwordRegex.test(newPassword)) {
-      setError("Password must be at least 8 characters and include lowercase, uppercase, number, and special character")
+      setError("Password must meet complexity requirements (min.8 character, at least one lower case, one upper case, one number and one special character)")
       return
     }
 
@@ -162,9 +170,6 @@ export default function ResetPasswordPage() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
               />
-              <p className="text-xs text-gray-500">
-                Password must be at least 8 characters and include lowercase, uppercase, number, and special character
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm Password</Label>

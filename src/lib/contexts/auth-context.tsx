@@ -9,6 +9,9 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
+  confirmLogout: () => void;
+  showLogoutConfirm: boolean;
+  setShowLogoutConfirm: (show: boolean) => void;
   navigateToResetPasswordRequest: (email: string) => Promise<{ success: boolean; message: string }>;
 }
 
@@ -16,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { 
     user, 
     setUser, 
@@ -57,12 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           
           // Store user data
-          const userData = {
-            id: data.id || '1',
+          const userData: User = {
+            userId: data.id || '1',
             email,
-            firstName: data.firstName || email,
-            lastName: data.lastName || email,
-            role: data.role || 'student'
+            firstname: data.firstName || email,
+            lastname: data.lastName || email,
+            role: data.role || 'ROLE_STUDENT'
           };
           
           setUser(userData);
@@ -84,6 +88,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       setStoreLoading(false);
     }
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(true);
   };
 
   const logout = async () => {
@@ -113,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
       setStoreLoading(false);
+      setShowLogoutConfirm(false);
     }
   };
 
@@ -127,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (response.ok) {
-        return { success: true, message: "Password reset request sent successfully." };
+        return { success: true, message: "Password reset request sent successfully. Please check your email for the reset link." };
       } else {
         return { success: false, message: "Failed to send password reset request." };
       }
@@ -142,6 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     login,
     logout,
+    confirmLogout,
+    showLogoutConfirm,
+    setShowLogoutConfirm,
     navigateToResetPasswordRequest,
   };
 
