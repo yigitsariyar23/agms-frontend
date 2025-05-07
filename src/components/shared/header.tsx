@@ -3,13 +3,14 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/contexts/auth-context"
 import Image from "next/image"
-
+import { useUser } from "@/lib/contexts/user-context";
 interface HeaderProps {
   className?: string
 }
 
 export function Header({ className }: HeaderProps) {
   const { user, logout } = useAuth();
+  const { userProfile } = useUser();
 
   return (
     <header className={cn("w-full border-b bg-background", className)}>
@@ -27,8 +28,10 @@ export function Header({ className }: HeaderProps) {
           {user && (
             <>
               <div className="flex flex-col items-end">
-                <span className="font-medium">{user.firstName} {user.lastName}</span>
-                <span className="text-xs text-muted-foreground">{user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}</span>
+                <span className="font-medium">{userProfile?.firstname} {userProfile?.lastname}</span>
+                <span className="text-xs text-muted-foreground">
+                  {userProfile?.role ? userProfile.role.replace('ROLE_', '').charAt(0).toUpperCase() + userProfile.role.replace('ROLE_', '').slice(1).toLowerCase() : ''}
+                </span>
               </div>
               <Button onClick={logout} className="hover:cursor-pointer">Log Out</Button>
             </>

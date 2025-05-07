@@ -13,9 +13,10 @@ import DepartmentSecretaryDashboard from "./contents/department_secretary/dashbo
 import DeansOfficeDashboard from "./contents/deans_office/dashboard-content" 
 import StudentAffairsDashboard from "./contents/student_affairs/dashboard-content"
 import Header from "@/components/shared/header"
-
+import { useUser } from "@/lib/contexts/user-context"
 export default function DashboardLayout() {
   const { user, loading } = useAuth()
+  const { userProfile } = useUser();
   const router = useRouter()
 
   useEffect(() => {
@@ -38,16 +39,16 @@ export default function DashboardLayout() {
 
   // Render the dashboard based on user role
   const renderDashboard = () => {
-    switch (user.role) {
-      case "student":
+    switch (userProfile?.role) {
+      case "ROLE_STUDENT":
         return <StudentDashboard />
-      case "advisor":
+      case "ROLE_ADVISOR":
         return <AdvisorDashboard />
-      case "department_secretary":
+      case "ROLE_DEPARTMENT_SECRETARY":
         return <DepartmentSecretaryDashboard />
-      case "deans_office":
+      case "ROLE_DEANS_OFFICE":
         return <DeansOfficeDashboard />
-      case "student_affairs":
+      case "ROLE_STUDENT_AFFAIRS":
         return <StudentAffairsDashboard />
       default:
         return (
