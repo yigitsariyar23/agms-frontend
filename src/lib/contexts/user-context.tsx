@@ -30,7 +30,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const response = await fetch('http://localhost:8080/api/users/profile', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

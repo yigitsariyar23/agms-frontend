@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStoreLoading(true);
       // Check if backend is available
       try {
-        const response = await fetch('http://localhost:8080/api/auth/login', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Network error:', networkError);
         return { 
           success: false, 
-          message: "Cannot connect to the server. Please ensure the backend server is running at http://localhost:8080."
+          message: "Cannot connect to the server. Please ensure the backend server is running."
         };
       }
     } catch (error) {
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Additional backend logout if needed
       try {
-        await fetch('http://localhost:8080/api/auth/logout', {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const navigateToResetPasswordRequest = async (email: string) => {
     try {
-      const response = await fetch('http://localhost:8080/api/auth/navigate-to-reset-password', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/navigate-to-reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
