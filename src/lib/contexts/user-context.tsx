@@ -23,34 +23,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     
     try {
       setLoading(true);
-      const token = getToken();
       
-      if (!token) {
-        setUserProfile(null);
-        return;
-      }
+      // Mock user profile data
+      const mockProfileData: User = {
+        ...user,  // Use the base user data from auth context
+        studentId: '2023001',  // Mock student ID
+        graduationRequestStatus: 'NOT_SUBMITTED'  // Mock graduation status
+      };
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include', // Include cookies for authentication
-      });
-
-      if (response.ok) {
-        const profileData = await response.json();
-        console.log(profileData);
-        setUserProfile(profileData);
-      } else if (response.status === 401) {
-        // Handle unauthorized
-        setUserProfile(null);
-      } else {
-        console.error('Failed to fetch user profile:', await response.text());
-      }
+      setUserProfile(mockProfileData);
+      
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      setUserProfile(null);
     } finally {
       setLoading(false);
     }

@@ -39,48 +39,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setStoreLoading(true);
-      // Check if backend is available
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-          // Store JWT token in cookie
-          if (data.token) {
-            setToken(data.token);
-          }
-          
-          // Store user data
-          const userData: User = {
-            userId: data.id || '1',
-            email,
-            firstname: data.firstName || email,
-            lastname: data.lastName || email,
-            role: data.role || 'ROLE_STUDENT'
-          };
-          
-          setUser(userData);
-          return { success: true, message: data.message || "Login successful!" };
-        } else {
-          return { success: false, message: data.message || "Login failed" };
-        }
-      } catch (networkError) {
-        console.error('Network error:', networkError);
-        return { 
-          success: false, 
-          message: "Cannot connect to the server. Please ensure the backend server is running."
-        };
-      }
+      
+      // Mock authentication - accept any credentials
+      const mockToken = 'mock-jwt-token-' + Math.random().toString(36).substring(7);
+      setToken(mockToken);
+      
+      // Create mock user data
+      const mockUserData: User = {
+        id: '1',
+        email: email,
+        firstName: email.split('@')[0] || 'John',
+        lastName: 'Doe',
+        role: 'ROLE_STUDENT'
+      };
+      
+      setUser(mockUserData);
+      return { success: true, message: "Mock login successful!" };
+      
     } catch (error) {
       console.error('Login failed:', error);
       return { success: false, message: "Login failed due to an unexpected error." };
