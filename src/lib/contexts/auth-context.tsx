@@ -44,21 +44,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const mockToken = 'mock-jwt-token-' + Math.random().toString(36).substring(7);
       setToken(mockToken);
       
-      // Create mock user data
+      // Create mock user data based on email
       const mockUserData: User = {
         id: '1',
         email: email,
         firstName: email.split('@')[0] || 'John',
         lastName: 'Doe',
-        role: 'ROLE_STUDENT'
+        role: email.includes('advisor') ? 'ROLE_ADVISOR' : 
+              email.includes('secretary') ? 'ROLE_DEPARTMENT_SECRETARY' :
+              email.includes('dean') ? 'ROLE_DEANS_OFFICE' :
+              email.includes('affairs') ? 'ROLE_STUDENT_AFFAIRS' :
+              'ROLE_STUDENT' // Default role
       };
       
       setUser(mockUserData);
-      return { success: true, message: "Mock login successful!" };
+      return { success: true, message: "Login successful!" };
       
     } catch (error) {
       console.error('Login failed:', error);
-      return { success: false, message: "Login failed due to an unexpected error." };
+      return { success: false, message: "Login failed. Please try again." };
     } finally {
       setLoading(false);
       setStoreLoading(false);
@@ -73,30 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setStoreLoading(true);
-      
-      // Clear auth state and remove JWT cookie
       clearAuth();
-      
-      // Additional backend logout if needed
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-      } catch (error) {
-        console.error('Logout API call failed:', error);
-        // Continue with logout even if API call fails
-      }
-      
+      setShowLogoutConfirm(false);
     } catch (error) {
       console.error('Logout failed:', error);
-      throw error;
     } finally {
       setLoading(false);
       setStoreLoading(false);
-      setShowLogoutConfirm(false);
     }
   };
 

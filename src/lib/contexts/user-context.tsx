@@ -24,11 +24,38 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       
-      // Mock user profile data
+      // Generate mock profile data based on user role
       const mockProfileData: User = {
-        ...user,  // Use the base user data from auth context
-        studentId: '2023001',  // Mock student ID
-        graduationRequestStatus: 'NOT_SUBMITTED'  // Mock graduation status
+        ...user,
+        studentId: user.role === 'ROLE_STUDENT' ? '2023001' : undefined,
+        graduationRequestStatus: user.role === 'ROLE_STUDENT' ? 'NOT_SUBMITTED' : undefined,
+        department: 'Computer Engineering',
+        advisor: user.role === 'ROLE_STUDENT' ? 'Dr. Jane Smith' : undefined,
+        gpa: user.role === 'ROLE_STUDENT' ? 3.5 : undefined,
+        creditsCompleted: user.role === 'ROLE_STUDENT' ? 120 : undefined,
+        totalCredits: user.role === 'ROLE_STUDENT' ? 240 : undefined,
+        semester: user.role === 'ROLE_STUDENT' ? 6 : undefined,
+        // Add role-specific data
+        ...(user.role === 'ROLE_ADVISOR' && {
+          advisees: ['2023001', '2023002', '2023003'],
+          department: 'Computer Engineering',
+          title: 'Associate Professor'
+        }),
+        ...(user.role === 'ROLE_DEPARTMENT_SECRETARY' && {
+          department: 'Computer Engineering',
+          office: 'Room 101',
+          phone: '+90 232 123 4567'
+        }),
+        ...(user.role === 'ROLE_DEANS_OFFICE' && {
+          office: 'Dean\'s Office',
+          title: 'Dean\'s Office Staff',
+          phone: '+90 232 123 4568'
+        }),
+        ...(user.role === 'ROLE_STUDENT_AFFAIRS' && {
+          office: 'Student Affairs Office',
+          title: 'Student Affairs Staff',
+          phone: '+90 232 123 4569'
+        })
       };
       
       setUserProfile(mockProfileData);

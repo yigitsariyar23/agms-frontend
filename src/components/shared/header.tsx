@@ -30,7 +30,7 @@ interface HeaderProps {
 }
 
 export function Header({ className }: HeaderProps) {
-  const { user, confirmLogout } = useAuth();
+  const { user, logout, confirmLogout } = useAuth();
   const { userProfile } = useUser();
 
   return (
@@ -64,20 +64,26 @@ export function Header({ className }: HeaderProps) {
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="hover:cursor-pointer">Log Out</Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Confirm Logout</DialogTitle>
-                    <DialogDescription>
+                <DialogContent className="sm:max-w-[425px] rounded-lg sm:rounded-lg p-4 sm:p-6 mx-4 sm:mx-0">
+                  <DialogHeader className="space-y-2 sm:space-y-3">
+                    <DialogTitle className="text-lg sm:text-xl">Confirm Logout</DialogTitle>
+                    <DialogDescription className="text-sm sm:text-base">
                       Are you sure you want to log out of your account? You will need to log in again to access your dashboard.
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter className="flex flex-row justify-end gap-2 sm:gap-0">
-                    <DialogTrigger asChild>
-                      <Button variant="outline">Cancel</Button>
+                  <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6">
+                    <DialogTrigger asChild className="w-full sm:w-auto">
+                      <Button 
+                        variant="outline" 
+                        className="w-full sm:w-auto order-2 sm:order-1"
+                      >
+                        Cancel
+                      </Button>
                     </DialogTrigger>
                     <Button 
                       variant="destructive" 
-                      onClick={logout}
+                      onClick={() => logout()}
+                      className="w-full sm:w-auto order-1 sm:order-2"
                     >
                       Log Out
                     </Button>

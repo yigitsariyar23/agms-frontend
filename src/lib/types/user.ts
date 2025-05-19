@@ -10,4 +10,14 @@ export interface User {
     role: Role;
     studentId?: string;
     graduationRequestStatus?: GraduationRequestStatus;
+    advisor?: string;
+    gpa?: number;
+    creditsCompleted?: number;
+    totalCredits?: number;
+    semester?: number;
+    department?: string;
+    office?: string;
+    title?: string;
+    phone?: string;
+    advisees?: string[];
 }
