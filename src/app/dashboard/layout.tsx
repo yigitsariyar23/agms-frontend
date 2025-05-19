@@ -62,11 +62,11 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div>
-      <div className="space-y-6">
-        <Header />
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1">
         {renderDashboard()}
-      </div>
+      </main>
     </div>
   )
 }
