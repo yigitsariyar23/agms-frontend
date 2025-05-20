@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { toast } from "sonner"
 
 const initialStudents = [
   {
@@ -60,8 +61,12 @@ const initialStudents = [
 export default function AdvisorDashboard() {
   const [students, setStudents] = useState(initialStudents)
   const [search, setSearch] = useState("")
-  const [modal, setModal] = useState<null | { type: "accept" | "decline" | "info", studentIdx: number }>(null)
+  const [modal, setModal] = useState<null | { 
+    type: "accept" | "decline" | "info" | "finalize", 
+    studentIdx?: number 
+  }>(null)
   const [declineReason, setDeclineReason] = useState("")
+  const [isFinalized, setIsFinalized] = useState(false)
 
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -83,9 +88,31 @@ export default function AdvisorDashboard() {
     }
   }
 
+  const handleFinalize = () => {
+    // Check if all students have been either approved or declined
+    const hasPendingStudents = students.some(s => s.status === "Pending")
+    if (hasPendingStudents) {
+      toast.error("All students must be either approved or declined before finalizing")
+      return
+    }
+    setModal({ type: "finalize" })
+  }
+
+  const confirmFinalize = () => {
+    setIsFinalized(true)
+    // Here you would typically make an API call to send the list to department secretary
+    toast.success("List has been finalized and sent to department secretary")
+    setModal(null)
+  }
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <h1 className="text-2xl font-bold mb-6">Advisor Dashboard</h1>
+      {isFinalized && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          List has been finalized and sent to department secretary
+        </div>
+      )}
       <Input
         type="text"
         placeholder="Search students..."
@@ -135,7 +162,14 @@ export default function AdvisorDashboard() {
         </tbody>
       </table>
       <div className="flex justify-center">
-        <Button variant="default" className="px-8 py-2">Finalize List</Button>
+        <Button 
+          variant="default" 
+          className="px-8 py-2"
+          onClick={handleFinalize}
+          disabled={isFinalized}
+        >
+          {isFinalized ? "List Finalized" : "Finalize List"}
+        </Button>
       </div>
 
       {/* Accept Modal */}
@@ -186,7 +220,7 @@ export default function AdvisorDashboard() {
           <DialogHeader>
             <DialogTitle>Student Information</DialogTitle>
           </DialogHeader>
-          {modal && (
+          {modal && modal.studentIdx !== undefined && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardContent>
@@ -222,6 +256,25 @@ export default function AdvisorDashboard() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Finalize Confirmation Modal */}
+      <Dialog open={!!modal && modal.type === "finalize"} onOpenChange={open => !open && setModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Finalize Student List</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to finalize this list? Once finalized, it will be sent to the department secretary for review.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={confirmFinalize}>Yes, Finalize List</Button>
+            <DialogClose asChild>
+              <Button variant="secondary">Cancel</Button>
+            </DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
