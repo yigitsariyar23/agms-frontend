@@ -79,17 +79,44 @@ const advisorListStatus = [
 export default function DepartmentSecretaryDashboard() {
   const [students, setStudents] = useState<Student[]>(initialStudents)
   const [search, setSearch] = useState("")
-  const [modal, setModal] = useState<null | { 
-    type: "decline" | "info" | "finalize", 
-    studentIdx?: number 
+  const [modal, setModal] = useState<null | {
+    type: "decline" | "info" | "finalize",
+    studentIdx?: number
   }>(null)
   const [declineReason, setDeclineReason] = useState("")
   const [isFinalized, setIsFinalized] = useState(false)
+  const [sortBy, setSortBy] = useState<keyof Student | null>(null)
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
+  const handleSort = (field: keyof Student) => {
+    if (sortBy === field) {
+      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"))
+    } else {
+      setSortBy(field)
+      setSortDirection("asc")
+    }
+  }
 
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.number.includes(search)
   )
+
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    if (!sortBy) return 0
+    const aVal = a[sortBy]
+    const bVal = b[sortBy]
+
+    if (typeof aVal === "string" && typeof bVal === "string") {
+      return sortDirection === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal)
+    }
+    if (typeof aVal === "number" && typeof bVal === "number") {
+      return sortDirection === "asc" ? aVal - bVal : bVal - aVal
+    }
+    return 0
+  })
 
   const handleApprove = (idx: number) => {
     setStudents(students => students.map((s, i) =>
@@ -146,9 +173,9 @@ export default function DepartmentSecretaryDashboard() {
             ))}
           </tbody>
         </table>
-        <Button 
-          variant="default" 
-          className="mt-4" 
+        <Button
+          variant="default"
+          className="mt-4"
           onClick={handleFinalize}
           disabled={isFinalized}
         >
@@ -170,41 +197,32 @@ export default function DepartmentSecretaryDashboard() {
       <table className="min-w-full bg-white border rounded mb-6">
         <thead>
           <tr>
-            <th className="px-4 py-2 text-left">Student Number</th>
-            <th className="px-4 py-2 text-left">Student Name</th>
-            <th className="px-4 py-2 text-left">Advisor</th>
-            <th className="px-4 py-2 text-left">Status</th>
+            <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("number")}>
+              Student Number {sortBy === "number" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
+            </th>
+            <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("name")}>
+              Student Name {sortBy === "name" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
+            </th>
+            <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("advisor")}>
+              Advisor {sortBy === "advisor" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
+            </th>
+            <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("status")}>
+              Status {sortBy === "status" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
+            </th>
             <th className="px-4 py-2 text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {filteredStudents.map((student, idx) => (
+          {sortedStudents.map((student, idx) => (
             <tr key={student.number} className="border-t">
               <td className="px-4 py-2">{student.number}</td>
               <td className="px-4 py-2">{student.name}</td>
               <td className="px-4 py-2">{student.advisor}</td>
               <td className="px-4 py-2">{student.status}</td>
               <td className="px-4 py-2 flex gap-2">
-                <Button
-                  variant="default"
-                  onClick={() => handleApprove(idx)}
-                  disabled={student.status === "Approved"}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => setModal({ type: "decline", studentIdx: idx })}
-                  disabled={student.status === "Declined"}
-                >
-                  Decline
-                </Button>
-                <Button 
-                  variant="default" 
-                  onClick={() => setModal({ type: "info", studentIdx: idx })}
-                >
-                  View Info
-                </Button>
+                <Button variant="default" onClick={() => handleApprove(idx)} disabled={student.status === "Approved"}>Approve</Button>
+                <Button variant="destructive" onClick={() => setModal({ type: "decline", studentIdx: idx })} disabled={student.status === "Declined"}>Decline</Button>
+                <Button variant="default" onClick={() => setModal({ type: "info", studentIdx: idx })}>View Info</Button>
               </td>
             </tr>
           ))}
