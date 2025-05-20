@@ -30,7 +30,7 @@ interface HeaderProps {
 }
 
 export function Header({ className }: HeaderProps) {
-  const { user, confirmLogout } = useAuth();
+  const { user, logout } = useAuth();
   const { userProfile } = useUser();
 
   return (
@@ -77,7 +77,9 @@ export function Header({ className }: HeaderProps) {
                     </DialogTrigger>
                     <Button 
                       variant="destructive" 
-                      onClick={logout}
+                      onClick={() => {
+                        logout();
+                      }}
                     >
                       Log Out
                     </Button>

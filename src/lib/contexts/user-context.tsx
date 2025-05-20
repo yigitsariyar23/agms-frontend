@@ -41,7 +41,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const profileData = await response.json();
-        console.log(profileData);
         setUserProfile(profileData);
       } else if (response.status === 401) {
         // Handle unauthorized
