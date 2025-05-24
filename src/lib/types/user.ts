@@ -3,12 +3,12 @@ export type Role = 'ROLE_ADMIN' | 'ROLE_STUDENT' | 'ROLE_USER' | 'ROLE_ADVISOR' 
 export type GraduationRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'NOT_SUBMITTED';
 
 export interface User {
-    id: string;
+    userId: string;
     email: string;
-    firstName: string;
-    lastName: string;
+    firstname: string;
+    lastname: string;
     role: Role;
-    studentId?: string;
+    studentNumber?: string;
     graduationRequestStatus?: GraduationRequestStatus;
     advisor?: string;
     gpa?: number;

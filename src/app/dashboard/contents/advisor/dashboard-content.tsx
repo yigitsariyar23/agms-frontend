@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,60 +14,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { ViewStudentInfo, StudentInfoProps } from "@/components/student/ViewStudentInfo";
 
-const initialStudents = [
-  {
-    number: "20230001",
-    name: "Alice Johnson",
-    status: "Pending",
-    email: "alice.johnson@example.com",
-    department: "Computer Science",
-    advisor: "Dr. Jane Doe",
-    gpa: 3.8,
-    curriculum: "Completed",
-    credits: 120,
-    files: [],
-  },
-  {
-    number: "20230002",
-    name: "Bob Smith",
-    status: "Approved",
-    email: "bob.smith@example.com",
-    department: "Electrical Engineering",
-    advisor: "Dr. Jane Doe",
-    gpa: 3.2,
-    curriculum: "Completed",
-    credits: 120,
-    files: [],
-  },
-  {
-    number: "20230003",
-    name: "Charlie Brown",
-    status: "Pending",
-    email: "charlie.brown@example.com",
-    department: "Mechanical Engineering",
-    advisor: "Dr. Jane Doe",
-    gpa: 2.9,
-    curriculum: "In Progress",
-    credits: 100,
-    files: [],
-  },
-  {
-    number: "20230004",
-    name: "Diana Prince",
-    status: "Declined",
-    email: "diana.prince@example.com",
-    department: "Civil Engineering",
-    advisor: "Dr. Jane Doe",
-    gpa: 3.5,
-    curriculum: "Completed",
-    credits: 120,
-    files: [],
-  },
-];
+interface Student {
+  number: string;
+  name: string;
+  status: "Approved" | "Declined" | "Pending";
+  email: string;
+  department: string;
+  advisor: string;
+  gpa?: number;
+  curriculum?: string;
+  credits?: number;
+  files?: string[];
+  advisorComment?: string;
+  secretaryComment?: string;
+  deanComment?: string;
+  declineReason?: string;
+  graduationStatus?: string;
+  graduationComment?: string;
+}
 
 export default function AdvisorDashboard() {
-  const [students, setStudents] = useState(initialStudents);
+  const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<null | {
     type: "accept" | "decline" | "info" | "finalize";
@@ -78,7 +47,20 @@ export default function AdvisorDashboard() {
   const [sortBy, setSortBy] = useState<keyof (typeof students)[0] | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  const handleSort = (field: keyof (typeof students)[0]) => {
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        toast.info("Student data would be fetched here.");
+      } catch (error) {
+        console.error("Failed to fetch students:", error);
+        toast.error("Failed to load student data.");
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  const handleSort = (field: keyof (typeof students)[0] | null) => {
     if (sortBy === field) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
@@ -135,7 +117,6 @@ export default function AdvisorDashboard() {
   };
 
   const handleFinalize = () => {
-    // Check if all students have been either approved or declined
     const hasPendingStudents = students.some((s) => s.status === "Pending");
     if (hasPendingStudents) {
       toast.error(
@@ -148,7 +129,6 @@ export default function AdvisorDashboard() {
 
   const confirmFinalize = () => {
     setIsFinalized(true);
-    // Here you would typically make an API call to send the list to department secretary
     toast.success("List has been finalized and sent to department secretary");
     setModal(null);
   };
@@ -260,7 +240,6 @@ export default function AdvisorDashboard() {
         </Button>
       </div>
 
-      {/* Accept Modal */}
       <Dialog
         open={!!modal && modal.type === "accept"}
         onOpenChange={(open) => !open && setModal(null)}
@@ -281,7 +260,6 @@ export default function AdvisorDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Decline Modal */}
       <Dialog
         open={!!modal && modal.type === "decline"}
         onOpenChange={(open) => !open && setModal(null)}
@@ -314,7 +292,6 @@ export default function AdvisorDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* View Info Modal */}
       <Dialog
         open={!!modal && modal.type === "info"}
         onOpenChange={(open) => !open && setModal(null)}
@@ -323,69 +300,19 @@ export default function AdvisorDashboard() {
           <DialogHeader>
             <DialogTitle>Student Information</DialogTitle>
           </DialogHeader>
-          {modal && modal.studentIdx !== undefined && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardContent>
-                  <div className="pt-4">
-                    <div className="text-2xl font-bold mb-2">
-                      {students[modal.studentIdx].name}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-bold">Student Number:</span>{" "}
-                      {students[modal.studentIdx].number}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-bold">Email:</span>{" "}
-                      {students[modal.studentIdx].email}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-bold">Department:</span>{" "}
-                      {students[modal.studentIdx].department}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-bold">Advisor:</span>{" "}
-                      {students[modal.studentIdx].advisor}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <div className="flex flex-col gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Graduation Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-1">
-                      ✔ <span className="font-bold">GPA:</span>{" "}
-                      {students[modal.studentIdx].gpa}
-                    </div>
-                    <div className="mb-1">
-                      ✔ <span className="font-bold">Curriculum:</span>{" "}
-                      {students[modal.studentIdx].curriculum}
-                    </div>
-                    <div className="mb-1">
-                      ✔ <span className="font-bold">Credits:</span>{" "}
-                      {students[modal.studentIdx].credits}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Attached Files</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div>No files attached</div>
-                    <Button className="mt-2">Attach Files</Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+          {modal && modal.studentIdx !== undefined && students[modal.studentIdx] ? (
+            <ViewStudentInfo student={students[modal.studentIdx] as StudentInfoProps['student']} />
+          ) : (
+            <p>Loading student information or student not found.</p>
           )}
+          <DialogFooter className="mt-4">
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Finalize Confirmation Modal */}
       <Dialog
         open={!!modal && modal.type === "finalize"}
         onOpenChange={(open) => !open && setModal(null)}

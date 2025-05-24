@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useUser } from "@/lib/contexts/user-context"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -49,16 +50,16 @@ export function Header({ className }: HeaderProps) {
           {user && (
             <>
               <div className="hidden sm:flex items-center gap-3">
-                <UserAvatar firstName={userProfile?.firstName} lastName={userProfile?.lastName} />
+                <UserAvatar firstName={userProfile?.firstname} lastName={userProfile?.lastname} />
                 <div className="flex flex-col items-end">
-                  <span className="font-medium">{userProfile?.firstName} {userProfile?.lastName}</span>
+                  <span className="font-medium">{userProfile?.firstname} {userProfile?.lastname}</span>
                   <span className="text-xs text-muted-foreground">
                     {userProfile?.role ? userProfile.role.replace('ROLE_', '').charAt(0).toUpperCase() + userProfile.role.replace('ROLE_', '').slice(1).toLowerCase() : ''}
                   </span>
                 </div>
               </div>
               <div className="sm:hidden">
-                <UserAvatar firstName={userProfile?.firstName} lastName={userProfile?.lastName} />
+                <UserAvatar firstName={userProfile?.firstname} lastName={userProfile?.lastname} />
               </div>
               <Dialog>
                 <DialogTrigger asChild>
@@ -72,14 +73,14 @@ export function Header({ className }: HeaderProps) {
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6">
-                    <DialogTrigger asChild className="w-full sm:w-auto">
+                    <DialogClose asChild className="w-full sm:w-auto">
                       <Button 
                         variant="outline" 
                         className="w-full sm:w-auto order-2 sm:order-1"
                       >
                         Cancel
                       </Button>
-                    </DialogTrigger>
+                    </DialogClose>
                     <Button 
                       variant="destructive" 
                       onClick={() => logout()}

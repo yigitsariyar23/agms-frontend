@@ -10,7 +10,7 @@ import { Info, Loader2 } from "lucide-react"
 import StudentDashboard from "./contents/student/dashboard-content"
 import AdvisorDashboard from "./contents/advisor/dashboard-content"
 import DepartmentSecretaryDashboard from "./contents/department_secretary/dashboard-content"
-import DeansOfficeDashboard from "./contents/deans_office/dashboard-content" 
+import DeansOfficeDashboard from "./contents/deans_office/dashboard-content"
 import StudentAffairsDashboard from "./contents/student_affairs/dashboard-content"
 import Header from "@/components/shared/header"
 import { useUser } from "@/lib/contexts/user-context"
@@ -40,9 +40,9 @@ export default function DashboardLayout() {
   // Render the dashboard based on user role
   const renderDashboard = () => {
     switch (userProfile?.role) {
-      case "ROLE_STUDENT":
+      case "STUDENT":
         return <StudentDashboard />
-      case "ROLE_ADVISOR":
+      case "ADVISOR":
         return <AdvisorDashboard />
       case "ROLE_DEPARTMENT_SECRETARY":
         return <DepartmentSecretaryDashboard />

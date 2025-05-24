@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { ViewStudentInfo, StudentInfoProps } from "@/components/student/ViewStudentInfo";
 
 interface Student {
   number: string;
@@ -36,80 +37,17 @@ interface Student {
   graduationComment?: string;
 }
 
-// This would typically come from an API
-const initialStudents: Student[] = [
-  {
-    number: "20230001",
-    name: "Alice Johnson",
-    status: "Approved",
-    email: "alice.johnson@example.com",
-    department: "Computer Science",
-    advisor: "Dr. Jane Doe",
-    gpa: 3.8,
-    curriculum: "Completed",
-    credits: 120,
-    files: [],
-    advisorComment: "Student meets all requirements",
-    secretaryComment: "All requirements verified, approved",
-    reviewed: true,
-    deanComment: "Approved for graduation",
-    deanReviewed: true,
-    graduationStatus: "Pending",
-  },
-  {
-    number: "20230002",
-    name: "Bob Smith",
-    status: "Approved",
-    email: "bob.smith@example.com",
-    department: "Electrical Engineering",
-    advisor: "Dr. Jane Doe",
-    gpa: 3.2,
-    curriculum: "Completed",
-    credits: 120,
-    files: [],
-    advisorComment: "Student meets all requirements",
-    secretaryComment: "Requirements verified, approved",
-    reviewed: true,
-    deanComment: "Approved for graduation",
-    deanReviewed: true,
-    graduationStatus: "Processed",
-    graduationComment: "Diploma prepared, waiting for ceremony",
-  },
-  {
-    number: "20230003",
-    name: "Charlie Brown",
-    status: "Declined",
-    email: "charlie.brown@example.com",
-    department: "Mechanical Engineering",
-    advisor: "Dr. Jane Doe",
-    gpa: 2.9,
-    curriculum: "In Progress",
-    credits: 100,
-    files: [],
-    advisorComment: "Insufficient credits and incomplete curriculum",
-    declineReason: "Student has not completed required credits",
-    secretaryComment: "Verified insufficient credits, decline approved",
-    reviewed: true,
-    deanComment: "Decline approved, student needs to complete requirements",
-    deanReviewed: true,
-    graduationStatus: "Pending",
-  },
-];
-
-// Mock dean's office list status
-const deansOfficeListStatus = [
-  {
-    faculty: "Faculty of Engineering",
-    dean: "Prof. Williams",
-    status: "Finalized",
-  },
-  { faculty: "Faculty of Science", dean: "Prof. Johnson", status: "Finalized" },
-  { faculty: "Faculty of Arts", dean: "Prof. Davis", status: "In Process" },
-  { faculty: "Faculty of Business", dean: "Prof. Wilson", status: "Finalized" },
-];
+// Define a type for Dean's Office Status, replace 'any' with a proper structure later
+interface DeanOfficeStatus {
+  faculty: string;
+  dean: string;
+  status: string;
+  // Add other relevant fields as needed
+}
 
 export default function StudentAffairsDashboard() {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [deanStatuses, setDeanStatuses] = useState<DeanOfficeStatus[]>([]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<null | {
     type: "decline" | "info" | "finalize";
@@ -119,6 +57,38 @@ export default function StudentAffairsDashboard() {
   const [isFinalized, setIsFinalized] = useState(false);
   const [sortBy, setSortBy] = useState<keyof Student | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // TODO: Fetch actual student data from the backend
+  useEffect(() => {
+    const fetchStudentsForStudentAffairs = async () => {
+      try {
+        // const response = await fetch("/api/student-affairs/students"); // Replace with your actual API endpoint
+        // const data = await response.json();
+        // setStudents(data);
+        toast.info("Student data for Student Affairs would be fetched here.");
+      } catch (error) {
+        console.error("Failed to fetch students for Student Affairs:", error);
+        toast.error("Failed to load student data for Student Affairs.");
+      }
+    };
+    fetchStudentsForStudentAffairs();
+  }, []);
+
+  // TODO: Fetch actual Dean's Office list statuses from the backend
+  useEffect(() => {
+    const fetchDeanStatuses = async () => {
+      try {
+        // const response = await fetch("/api/student-affairs/dean-statuses"); // Replace with your actual API endpoint
+        // const data = await response.json();
+        // setDeanStatuses(data);
+        toast.info("Dean's Office list statuses would be fetched here.");
+      } catch (error) {
+        console.error("Failed to fetch Dean's Office statuses:", error);
+        toast.error("Failed to load Dean's Office statuses.");
+      }
+    };
+    fetchDeanStatuses();
+  }, []);
 
   const handleSort = (field: keyof Student) => {
     if (sortBy === field) {
@@ -224,7 +194,7 @@ export default function StudentAffairsDashboard() {
             </tr>
           </thead>
           <tbody>
-            {deansOfficeListStatus.map((faculty) => (
+            {deanStatuses.map((faculty) => (
               <tr key={faculty.faculty}>
                 <td className="py-2">{faculty.faculty}</td>
                 <td className="py-2">{faculty.dean}</td>
@@ -402,117 +372,16 @@ export default function StudentAffairsDashboard() {
           <DialogHeader>
             <DialogTitle>Student Information</DialogTitle>
           </DialogHeader>
-          {modal && modal.studentIdx !== undefined && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardContent>
-                  <div className="pt-4">
-                    <div className="text-2xl font-bold mb-2">
-                      {students[modal.studentIdx].name}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-bold">Student Number:</span>{" "}
-                      {students[modal.studentIdx].number}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-bold">Email:</span>{" "}
-                      {students[modal.studentIdx].email}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-bold">Department:</span>{" "}
-                      {students[modal.studentIdx].department}
-                    </div>
-                    <div className="mb-1">
-                      <span className="font-bold">Advisor:</span>{" "}
-                      {students[modal.studentIdx].advisor}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <div className="flex flex-col gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Graduation Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-1">
-                      ✔ <span className="font-bold">GPA:</span>{" "}
-                      {students[modal.studentIdx].gpa}
-                    </div>
-                    <div className="mb-1">
-                      ✔ <span className="font-bold">Curriculum:</span>{" "}
-                      {students[modal.studentIdx].curriculum}
-                    </div>
-                    <div className="mb-1">
-                      ✔ <span className="font-bold">Credits:</span>{" "}
-                      {students[modal.studentIdx].credits}
-                    </div>
-                    {students[modal.studentIdx].status === "Approved" && (
-                      <div className="mt-2">
-                        <span className="font-bold">Graduation Status:</span>{" "}
-                        <span
-                          className={
-                            students[modal.studentIdx].graduationStatus ===
-                            "Completed"
-                              ? "text-green-600"
-                              : students[modal.studentIdx].graduationStatus ===
-                                  "Processed"
-                                ? "text-blue-600"
-                                : "text-yellow-600"
-                          }
-                        >
-                          {students[modal.studentIdx].graduationStatus ||
-                            "Pending"}
-                        </span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Review Information</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-2">
-                      <span className="font-bold">Advisor's Comment:</span>
-                      <p className="mt-1">
-                        {students[modal.studentIdx].advisorComment}
-                      </p>
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-bold">Secretary's Comment:</span>
-                      <p className="mt-1">
-                        {students[modal.studentIdx].secretaryComment}
-                      </p>
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-bold">Dean's Comment:</span>
-                      <p className="mt-1">
-                        {students[modal.studentIdx].deanComment}
-                      </p>
-                    </div>
-                    {students[modal.studentIdx].status === "Declined" && (
-                      <div className="mb-2">
-                        <span className="font-bold">Decline Reason:</span>
-                        <p className="mt-1">
-                          {students[modal.studentIdx].declineReason}
-                        </p>
-                      </div>
-                    )}
-                    {students[modal.studentIdx].graduationStatus ===
-                      "Processed" && (
-                      <div className="mb-2">
-                        <span className="font-bold">Processing Details:</span>
-                        <p className="mt-1">
-                          {students[modal.studentIdx].graduationComment}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+          {modal && modal.studentIdx !== undefined && students[modal.studentIdx] ? (
+            <ViewStudentInfo student={students[modal.studentIdx] as StudentInfoProps['student']} />
+          ) : (
+            <p>Loading student information or student not found.</p>
           )}
+          <DialogFooter className="mt-4">
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

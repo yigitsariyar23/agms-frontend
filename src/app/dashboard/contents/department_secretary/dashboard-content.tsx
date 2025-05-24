@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
+import { ViewStudentInfo, StudentInfoProps } from "@/components/student/ViewStudentInfo"
 
 interface Student {
   number: string
@@ -14,70 +15,29 @@ interface Student {
   email: string
   department: string
   advisor: string
-  gpa: number
-  curriculum: string
-  credits: number
-  files: string[]
-  advisorComment: string
+  gpa?: number
+  curriculum?: string
+  credits?: number
+  files?: string[]
+  advisorComment?: string
   declineReason?: string
   reviewed?: boolean
   secretaryComment?: string
+  deanComment?: string
+  graduationStatus?: string
+  graduationComment?: string
 }
 
-// This would typically come from an API
-const initialStudents: Student[] = [
-  {
-    number: "20230001",
-    name: "Alice Johnson",
-    status: "Approved",
-    email: "alice.johnson@example.com",
-    department: "Computer Science",
-    advisor: "Dr. Jane Doe",
-    gpa: 3.8,
-    curriculum: "Completed",
-    credits: 120,
-    files: [],
-    advisorComment: "Student meets all requirements",
-  },
-  {
-    number: "20230002",
-    name: "Bob Smith",
-    status: "Approved",
-    email: "bob.smith@example.com",
-    department: "Electrical Engineering",
-    advisor: "Dr. Jane Doe",
-    gpa: 3.2,
-    curriculum: "Completed",
-    credits: 120,
-    files: [],
-    advisorComment: "Student meets all requirements",
-  },
-  {
-    number: "20230003",
-    name: "Charlie Brown",
-    status: "Declined",
-    email: "charlie.brown@example.com",
-    department: "Mechanical Engineering",
-    advisor: "Dr. Jane Doe",
-    gpa: 2.9,
-    curriculum: "In Progress",
-    credits: 100,
-    files: [],
-    advisorComment: "Insufficient credits and incomplete curriculum",
-    declineReason: "Student has not completed required credits",
-  },
-]
-
-// Mock advisor list status
-const advisorListStatus = [
-  { name: "Dr. Smith", status: "Finalized" },
-  { name: "Dr. Johnson", status: "Finalized" },
-  { name: "Dr. Davis", status: "In Process" },
-  { name: "Dr. Wilson", status: "Finalized" },
-]
+// Define a type for Advisor Status, replace 'any' with a proper structure later
+interface AdvisorStatus {
+  name: string;
+  status: string; 
+  // Add other relevant fields as needed
+}
 
 export default function DepartmentSecretaryDashboard() {
-  const [students, setStudents] = useState<Student[]>(initialStudents)
+  const [students, setStudents] = useState<Student[]>([])
+  const [advisorStatuses, setAdvisorStatuses] = useState<AdvisorStatus[]>([])
   const [search, setSearch] = useState("")
   const [modal, setModal] = useState<null | {
     type: "decline" | "info" | "finalize",
@@ -87,6 +47,38 @@ export default function DepartmentSecretaryDashboard() {
   const [isFinalized, setIsFinalized] = useState(false)
   const [sortBy, setSortBy] = useState<keyof Student | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
+  // TODO: Fetch actual student data from the backend
+  useEffect(() => {
+    const fetchStudentsForSecretary = async () => {
+      try {
+        // const response = await fetch("/api/department-secretary/students"); // Replace with your actual API endpoint
+        // const data = await response.json();
+        // setStudents(data);
+        toast.info("Student data for secretary would be fetched here.");
+      } catch (error) {
+        console.error("Failed to fetch students for secretary:", error);
+        toast.error("Failed to load student data for secretary.");
+      }
+    };
+    fetchStudentsForSecretary();
+  }, []);
+
+  // TODO: Fetch actual advisor list statuses from the backend
+  useEffect(() => {
+    const fetchAdvisorStatuses = async () => {
+      try {
+        // const response = await fetch("/api/department-secretary/advisor-statuses"); // Replace with your actual API endpoint
+        // const data = await response.json();
+        // setAdvisorStatuses(data);
+        toast.info("Advisor list statuses would be fetched here.");
+      } catch (error) {
+        console.error("Failed to fetch advisor statuses:", error);
+        toast.error("Failed to load advisor statuses.");
+      }
+    };
+    fetchAdvisorStatuses();
+  }, []);
 
   const handleSort = (field: keyof Student) => {
     if (sortBy === field) {
@@ -165,7 +157,7 @@ export default function DepartmentSecretaryDashboard() {
             </tr>
           </thead>
           <tbody>
-            {advisorListStatus.map((advisor, idx) => (
+            {advisorStatuses.map((advisor, idx) => (
               <tr key={advisor.name}>
                 <td className="py-2">{advisor.name}</td>
                 <td className="py-2">{advisor.status}</td>
@@ -261,56 +253,16 @@ export default function DepartmentSecretaryDashboard() {
           <DialogHeader>
             <DialogTitle>Student Information</DialogTitle>
           </DialogHeader>
-          {modal && modal.studentIdx !== undefined && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardContent>
-                  <div className="pt-4">
-                    <div className="text-2xl font-bold mb-2">{students[modal.studentIdx].name}</div>
-                    <div className="mb-1"><span className="font-bold">Student Number:</span> {students[modal.studentIdx].number}</div>
-                    <div className="mb-1"><span className="font-bold">Email:</span> {students[modal.studentIdx].email}</div>
-                    <div className="mb-1"><span className="font-bold">Department:</span> {students[modal.studentIdx].department}</div>
-                    <div className="mb-1"><span className="font-bold">Advisor:</span> {students[modal.studentIdx].advisor}</div>
-                  </div>
-                </CardContent>
-              </Card>
-              <div className="flex flex-col gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Graduation Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-1">✔ <span className="font-bold">GPA:</span> {students[modal.studentIdx].gpa}</div>
-                    <div className="mb-1">✔ <span className="font-bold">Curriculum:</span> {students[modal.studentIdx].curriculum}</div>
-                    <div className="mb-1">✔ <span className="font-bold">Credits:</span> {students[modal.studentIdx].credits}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Review Information</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-2">
-                      <span className="font-bold">Advisor's Comment:</span>
-                      <p className="mt-1">{students[modal.studentIdx].advisorComment}</p>
-                    </div>
-                    {students[modal.studentIdx].status === "Declined" && (
-                      <div className="mb-2">
-                        <span className="font-bold">Decline Reason:</span>
-                        <p className="mt-1">{students[modal.studentIdx].declineReason}</p>
-                      </div>
-                    )}
-                    {students[modal.studentIdx].reviewed && (
-                      <div className="mb-2">
-                        <span className="font-bold">Secretary's Comment:</span>
-                        <p className="mt-1">{students[modal.studentIdx].secretaryComment}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+          {modal && modal.studentIdx !== undefined && students[modal.studentIdx] ? (
+            <ViewStudentInfo student={students[modal.studentIdx] as StudentInfoProps['student']} />
+          ) : (
+            <p>Loading student information or student not found.</p>
           )}
+          <DialogFooter className="mt-4">
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
