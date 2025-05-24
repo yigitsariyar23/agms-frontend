@@ -65,7 +65,7 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/student/${studentProfile.studentNumber}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/student/${studentProfile.studentNumber}/latest`, {
         method: 'GET', 
         headers: {
           'Content-Type': 'application/json',
@@ -78,27 +78,22 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
         if (data && data.status) {
            setGraduationStatus({
             status: data.status as GraduationRequestStatus,
-            message: data.message || 'Status loaded successfully.'
+            message: data.message || 'Latest submission status loaded successfully.'
           });
-        } else if (response.status === 404) { // No submission found, treat as NOT_SUBMITTED
-           setGraduationStatus({
-            status: "NOT_SUBMITTED",
-            message: "You have not submitted a graduation request yet."
-           });
-        }
-         else { // No data but response ok
+        } else {
             setGraduationStatus({
                 status: "NOT_SUBMITTED", // Default if no status in response
                 message: "Could not retrieve current graduation status."
             });
         }
-      } else if (response.status === 404) { // Explicitly handle 404 for "no submission yet"
+      } else if (response.status === 404) {
+        // No submission found, treat as NOT_SUBMITTED
         setGraduationStatus({
             status: "NOT_SUBMITTED",
-            message: "You have not submitted a graduation request yet."
+            message: "Not requested"
         });
-      }
-      else { // Non-OK response
+      } else {
+        // Non-OK response
         let detailedMessage = response.statusText || "Failed to load status";
         try {
           const errorBody = await response.json();
@@ -124,7 +119,7 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [studentProfile?.studentNumber]); // Removed clearAlert from dependencies as it's stable
+  }, [studentProfile?.studentNumber]);
 
   // The main useEffect now relies on data from StudentContext for initialization.
   useEffect(() => {

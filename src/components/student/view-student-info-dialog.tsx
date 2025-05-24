@@ -91,15 +91,11 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Student Information
-          </DialogTitle>
+          <DialogTitle>Student Information</DialogTitle>
           <DialogDescription>
-            Complete student profile and academic information
+            View detailed student profile, graduation status, and attached files.
           </DialogDescription>
         </DialogHeader>
-        
         <div className="space-y-6">
           {loading ? (
             <div className="space-y-4">

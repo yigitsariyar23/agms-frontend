@@ -77,7 +77,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
         setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Auth token missing for grad status" });
         return;
       }
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/student/${studentNumber}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/student/${studentNumber}/latest`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -89,14 +89,20 @@ export function StudentProvider({ children }: { children: ReactNode }) {
         if (data && data.status) {
           setInitialGraduationStatusData({
             status: data.status as GraduationRequestStatus,
-            message: data.message || "Graduation status loaded.",
+            message: data.message || "Latest graduation submission status loaded.",
           });
         } else {
           setInitialGraduationStatusData({
             status: "NOT_SUBMITTED",
-            message: response.status === 404 ? "No graduation submission found." : "Could not determine graduation status."
+            message: "No graduation submission status found."
           });
         }
+      } else if (response.status === 404) {
+        // No submission exists
+        setInitialGraduationStatusData({
+          status: "NOT_SUBMITTED",
+          message: "Not requested"
+        });
       } else {
         let errorMessage = response.statusText;
         try {

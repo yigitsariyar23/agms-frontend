@@ -47,7 +47,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           firstname: profileData.firstname || '',
           lastname: profileData.lastname || '',
           role: profileData.role,
-          studentNumber: profileData.studentNumber, // Include if user is a student
+          studentNumber: profileData.studentNumber, // Include if user is a studen
         };
         
         setUser(userData);

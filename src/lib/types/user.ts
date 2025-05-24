@@ -8,6 +8,7 @@ export interface User {
     lastname: string;
     role: Role;
     studentNumber?: string;
+    instituteNumber?: string;
     graduationRequestStatus?: GraduationRequestStatus;
     advisor?: string;
     gpa?: number;
