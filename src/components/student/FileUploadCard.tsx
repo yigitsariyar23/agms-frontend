@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, ChangeEvent } from "react";
+import { useState, ChangeEvent, DragEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Assuming you have an Input component
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Assuming you have an Alert component
-import { XCircle, FileUp, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { XCircle, FileUp, Loader2, UploadCloud, FileText, Trash2 } from "lucide-react";
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -14,47 +13,85 @@ const ACCEPTED_FILE_TYPE = "application/pdf";
 export default function FileUploadCard() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    setSuccessMessage(null);
-    setSelectedFile(null);
+  const processFile = (file: File | undefined) => {
     const fileInput = document.getElementById('file-upload-input') as HTMLInputElement;
 
-    const file = event.target.files?.[0];
-
-    if (file) {
-      if (file.type !== ACCEPTED_FILE_TYPE) {
-        setError("Invalid file format. Only .pdf files are accepted.");
-        if (fileInput) fileInput.value = "";
-        return;
-      }
-
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        setError(`File is too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
-        if (fileInput) fileInput.value = "";
-        return;
-      }
-      setSelectedFile(file);
-      setError(null);
+    if (!file) {
+      // This case might occur if the input is cleared programmatically
+      // or if no file is actually provided in a drop event.
+      // We don't want to set an error here unless it's an explicit user action that failed.
+      // setError(null); // Or keep existing error if any
+      // setSelectedFile(null);
+      return;
     }
+
+    setError(null); // Clear previous errors
+
+    if (file.type !== ACCEPTED_FILE_TYPE) {
+      setError("Invalid file format. Only .pdf files are accepted.");
+      setSelectedFile(null);
+      if (fileInput) fileInput.value = ""; // Clear the input
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setError(`File ${file.name} size exceeds the ${MAX_FILE_SIZE_MB}MB limit. Please upload a smaller file.`);
+      setSelectedFile(null);
+      if (fileInput) fileInput.value = ""; // Clear the input
+      return;
+    }
+    
+    setSelectedFile(file);
+    setError(null);
+    // Do not clear fileInput.value here, allow re-selection of the same file if removed
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    processFile(file);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    event.currentTarget.classList.remove('border-purple-500');
+    const file = event.dataTransfer.files?.[0];
+    processFile(file);
+    
+    // Reset file input value to ensure onChange fires for subsequent drops of the same file
+    const fileInput = document.getElementById('file-upload-input') as HTMLInputElement;
+    if (fileInput) fileInput.value = "";
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+    event.currentTarget.classList.add('border-purple-500');
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    event.currentTarget.classList.remove('border-purple-500');
   };
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setError("Please select a file first.");
+      setError("Please select a PDF file first.");
       return;
     }
     setError(null);
-    setSuccessMessage(null);
     setIsUploading(true);
 
     try {
       console.log("Uploading file:", selectedFile.name);
       await new Promise(resolve => setTimeout(resolve, 2500));
-      setSuccessMessage(`${selectedFile.name} selected and validated. Ready for upload.`);
     } catch (uploadError) {
       setError("Upload failed. Please try again.");
       console.error("Upload error:", uploadError);
@@ -66,29 +103,53 @@ export default function FileUploadCard() {
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setError(null);
-    setSuccessMessage(null);
     const fileInput = document.getElementById('file-upload-input') as HTMLInputElement;
-    if (fileInput) fileInput.value = "";
-  }
+    if (fileInput) fileInput.value = ""; // Clear the input to allow re-selection
+  };
 
   return (
-    <Card className="col-span-1">
+    <Card className="col-span-1 w-full max-w-lg mx-auto">
       <CardHeader>
         <CardTitle className="text-lg sm:text-xl">Upload Document</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 p-4 sm:p-6">
         <div className="space-y-2">
-          <label htmlFor="file-upload-input" className="text-sm font-medium">
-            Upload your PDF (Max {MAX_FILE_SIZE_MB}MB)
+          <label 
+            htmlFor="file-upload-input"
+            className={`flex flex-col items-center justify-center w-full h-48 px-4 transition bg-background border-2 ${
+              isDragging ? 'border-purple-500' : 'border-purple-300 dark:border-purple-600'
+            } border-dashed rounded-lg appearance-none cursor-pointer hover:border-purple-500 focus:outline-none`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              id="file-upload-input"
+              type="file"
+              accept={ACCEPTED_FILE_TYPE}
+              className="hidden"
+              onChange={handleFileChange}
+              disabled={isUploading}
+            />
+            {isUploading ? (
+              <div className="flex flex-col items-center space-y-2">
+                <Loader2 className="animate-spin h-10 w-10 text-purple-600" />
+                <span className="font-medium text-foreground">
+                  Uploading document...
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center space-y-2 text-center">
+                <UploadCloud className="w-10 h-10 text-purple-600" />
+                <span className="font-medium text-foreground">
+                  Click to upload or drag and drop PDF
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  PDF (Max {MAX_FILE_SIZE_MB}MB)
+                </span>
+              </div>
+            )}
           </label>
-          <Input
-            id="file-upload-input"
-            type="file"
-            accept={ACCEPTED_FILE_TYPE}
-            onChange={handleFileChange}
-            className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 disabled:opacity-50"
-            disabled={isUploading}
-          />
         </div>
 
         {error && (
@@ -99,50 +160,42 @@ export default function FileUploadCard() {
           </Alert>
         )}
         
-        {successMessage && !error && !isUploading && (
-           <Alert variant="default" className="bg-green-50 border-green-300 text-green-700">
-             <FileUp className="h-4 w-4 text-green-600" />
-             <AlertTitle className="font-semibold">File Ready</AlertTitle>
-             <AlertDescription>{successMessage}</AlertDescription>
-           </Alert>
-        )}
-
-        {isUploading && (
-          <div className="flex items-center justify-center p-4 space-x-2 text-sm text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Uploading document...</span>
+        {selectedFile && !error && !isUploading && (
+          <div className="space-y-3 pt-2">
+            <h4 className="text-md font-medium text-foreground">Selected File:</h4>
+            <div className="flex items-center justify-between text-sm text-foreground bg-muted/50 p-3 rounded-lg">
+              <div className="flex items-center space-x-2 overflow-hidden">
+                <FileText className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                <span className="truncate" title={selectedFile.name}>
+                  {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRemoveFile}
+                className="text-red-500 hover:text-red-700"
+                aria-label="Remove file"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         )}
 
         {selectedFile && !error && !isUploading && (
-          <div className="text-sm text-muted-foreground space-y-3 pt-2">
-            <div>
-              <p className="font-medium">Selected file:</p>
-              <p>{selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</p>
-            </div>
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <Button 
-                onClick={handleUpload} 
-                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
-                disabled={isUploading || !selectedFile}
-              >
-                <FileUp className="mr-2 h-4 w-4" />
-                Upload File
-              </Button>
-              <Button 
-                onClick={handleRemoveFile} 
-                variant="outline"
-                className="w-full sm:w-auto"
-                disabled={isUploading}
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Remove
-              </Button>
-            </div>
-          </div>
+          <Button 
+            onClick={handleUpload} 
+            className="w-full bg-green-600 hover:bg-green-700 text-white mt-4"
+            disabled={isUploading}
+          >
+            <FileUp className="mr-2 h-4 w-4" />
+            Upload File
+          </Button>
         )}
-         {!selectedFile && !error && !successMessage && !isUploading && (
-          <div className="text-sm text-muted-foreground pt-2">
+        
+        {!selectedFile && !error && !isUploading && (
+          <div className="text-sm text-muted-foreground text-center pt-2">
             Please select a PDF file to upload.
           </div>
         )}
