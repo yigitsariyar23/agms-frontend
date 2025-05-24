@@ -7,7 +7,6 @@ const Footer = () => {
     const [showInfo, setShowInfo] = useState(false);
     const dialogRef = useRef<HTMLDivElement>(null);
 
-    // ESC tuşu ile kapama
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -18,7 +17,6 @@ const Footer = () => {
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // Dışarı tıklanınca kapama
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dialogRef.current && !dialogRef.current.contains(e.target as Node)) {
