@@ -9,6 +9,11 @@ import FileUploadCard from "@/components/student/FileUploadCard"
 export default function StudentDashboard() {
   const { userProfile, detailedStudentData, loading, loadingDetailedInfo } = useUser();
   
+  console.log('StudentDashboard - userProfile:', userProfile);
+  console.log('StudentDashboard - detailedStudentData:', detailedStudentData);
+  console.log('StudentDashboard - loading:', loading);
+  console.log('StudentDashboard - loadingDetailedInfo:', loadingDetailedInfo);
+  
   // Get the graduation status from the user profile or set to "NOT_REQUESTED" as fallback
   const graduationRequestStatus = userProfile?.graduationRequestStatus || "NOT_SUBMITTED";
   // Map backend status to user-friendly display
@@ -26,6 +31,30 @@ export default function StudentDashboard() {
   // Don't show any button if status is APPROVED
   const showRequestButton = graduationRequestStatus !== "PENDING" && graduationRequestStatus !== "APPROVED";
   
+  // Helper function to get advisor name as string
+  const getAdvisorName = (): string => {
+    // First try to get advisor from detailed student data
+    if (detailedStudentData?.advisor?.firstName && detailedStudentData?.advisor?.lastName) {
+      return `${detailedStudentData.advisor.firstName} ${detailedStudentData.advisor.lastName}`;
+    }
+    
+    // If userProfile.advisor is an object, extract the name
+    if (userProfile?.advisor && typeof userProfile.advisor === 'object') {
+      const advisorObj = userProfile.advisor as any;
+      if (advisorObj.firstName && advisorObj.lastName) {
+        return `${advisorObj.firstName} ${advisorObj.lastName}`;
+      }
+    }
+    
+    // If userProfile.advisor is a string, use it directly
+    if (typeof userProfile?.advisor === 'string') {
+      return userProfile.advisor;
+    }
+    
+    // Fallback
+    return "N/A";
+  };
+  
   // Construct studentInfoForView by merging userProfile and detailedStudentData
   const studentInfoForView: StudentInfoProps['student'] | null = userProfile
     ? {
@@ -33,9 +62,7 @@ export default function StudentDashboard() {
         number: userProfile.studentNumber || detailedStudentData?.studentNumber || "N/A",
         email: userProfile.email,
         department: detailedStudentData?.department || userProfile.department || "N/A",
-        advisor: detailedStudentData?.advisor?.firstName && detailedStudentData?.advisor?.lastName 
-                  ? `${detailedStudentData.advisor.firstName} ${detailedStudentData.advisor.lastName}` 
-                  : userProfile.advisor || "N/A",
+        advisor: getAdvisorName(),
         gpa: detailedStudentData?.gpa ?? userProfile.gpa,
         credits: detailedStudentData?.totalCredit ?? userProfile.creditsCompleted,
         semester: detailedStudentData?.semester ?? userProfile.semester,
@@ -43,25 +70,14 @@ export default function StudentDashboard() {
       }
     : null;
   
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+    if (loading) {    return (      <div className="flex h-screen items-center justify-center" suppressHydrationWarning>        <Loader2 className="h-8 w-8 animate-spin text-primary" />      </div>    );  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <h1 className="text-2xl font-bold mb-6">Student Dashboard</h1>
       
       {/* Display Student Information */}
-      {loadingDetailedInfo && !detailedStudentData && (
-        <div className="mb-8 flex items-center justify-center p-4">
-           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /> 
-           <span className="ml-2 text-muted-foreground">Loading detailed information...</span>
-        </div>
-      )}
+            {loadingDetailedInfo && !detailedStudentData && (        <div className="mb-8 flex items-center justify-center p-4" suppressHydrationWarning>           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />            <span className="ml-2 text-muted-foreground">Loading detailed information...</span>        </div>      )}
       {studentInfoForView && (
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-4">My Information</h2>

@@ -57,22 +57,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
+        console.log('User profile data received:', profileData);
+        
+        // Now we get all basic user info including firstname, lastname, role
         const userData: User = {
-          userId: profileData.userId,
-          email: profileData.email,
-          firstname: profileData.firstname,
-          lastname: profileData.lastname,
-          role: profileData.role, // Make sure this matches the Role type in frontend
-          studentNumber: profileData.studentNumber,
-          // Add other fields from UserProfileResponse as needed, ensuring they exist in frontend User type
+          userId: profileData.userId || '',
+          email: profileData.email || '',
+          firstname: profileData.firstname || '',
+          lastname: profileData.lastname || '',
+          role: profileData.role,
+          studentNumber: profileData.studentNumber, // Include if user is a student
         };
         setUser(userData);
         return userData;
       } else {
         console.error("Failed to fetch user profile", profileResponse.statusText);
-        // If profile fetch fails, might indicate an issue with the token or backend
-        // Depending on policy, you might want to clear auth here if profile is essential
-        // clearAuth(); 
         return null;
       }
     } catch (error) {
@@ -101,15 +100,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok && data.token) {
         setToken(data.token); // Store token in cookie via auth-store
         
-        // Fetch user profile using the new token
+        // Fetch user role using the new token
         const userProfile = await fetchUserProfile(data.token);
 
         if (userProfile) {
           return { success: true, message: data.message || "Login successful!" };
         } else {
-          // If profile fetch failed after successful login and token retrieval
+          // If role fetch failed after successful login and token retrieval
           clearAuth(); // Clear the potentially bad token
-          return { success: false, message: "Login succeeded but failed to fetch user profile." };
+          return { success: false, message: "Login succeeded but failed to fetch user role." };
         }
       } else {
         return { success: false, message: data.message || "Login failed" };

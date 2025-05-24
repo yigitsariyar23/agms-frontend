@@ -14,6 +14,8 @@ import DeansOfficeDashboard from "./contents/deans_office/dashboard-content"
 import StudentAffairsDashboard from "./contents/student_affairs/dashboard-content"
 import Header from "@/components/shared/header"
 import { useUser } from "@/lib/contexts/user-context"
+import ErrorBoundary from "@/components/ErrorBoundary"
+
 export default function DashboardLayout() {
   const { user, loading } = useAuth()
   const { userProfile } = useUser();
@@ -25,13 +27,7 @@ export default function DashboardLayout() {
     }
   }, [user, loading, router])
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
+  if (loading) {    return (      <div className="flex h-screen items-center justify-center" suppressHydrationWarning>        <Loader2 className="h-8 w-8 animate-spin text-primary" />      </div>    )  }
 
   if (!user) {
     return null
@@ -39,17 +35,50 @@ export default function DashboardLayout() {
 
   // Render the dashboard based on user role
   const renderDashboard = () => {
-    switch (userProfile?.role) {
+    console.log('User profile:', userProfile); // Debug log
+    console.log('User role:', userProfile?.role); // Debug log
+    console.log('Auth user:', user); // Debug log
+    
+    // Use userProfile role if available, otherwise fall back to auth user role
+    const currentRole = userProfile?.role || user?.role;
+    console.log('Current role being used:', currentRole); // Debug log
+    
+    switch (currentRole) {
       case "STUDENT":
-        return <StudentDashboard />
+      case "ROLE_STUDENT":
+        return (
+          <ErrorBoundary>
+            <StudentDashboard />
+          </ErrorBoundary>
+        )
       case "ADVISOR":
-        return <AdvisorDashboard />
+      case "ROLE_ADVISOR":
+        return (
+          <ErrorBoundary>
+            <AdvisorDashboard />
+          </ErrorBoundary>
+        )
+      case "DEPARTMENT_SECRETARY":
       case "ROLE_DEPARTMENT_SECRETARY":
-        return <DepartmentSecretaryDashboard />
+        return (
+          <ErrorBoundary>
+            <DepartmentSecretaryDashboard />
+          </ErrorBoundary>
+        )
+      case "DEAN_OFFICER":
       case "ROLE_DEANS_OFFICE":
-        return <DeansOfficeDashboard />
+        return (
+          <ErrorBoundary>
+            <DeansOfficeDashboard />
+          </ErrorBoundary>
+        )
+      case "STUDENT_AFFAIRS":
       case "ROLE_STUDENT_AFFAIRS":
-        return <StudentAffairsDashboard />
+        return (
+          <ErrorBoundary>
+            <StudentAffairsDashboard />
+          </ErrorBoundary>
+        )
       default:
         return (
           <Alert>

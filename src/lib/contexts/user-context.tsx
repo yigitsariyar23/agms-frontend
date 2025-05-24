@@ -84,41 +84,61 @@ export function UserProvider({ children }: { children: ReactNode }) {
     
     setLoading(true);
     setDetailedStudentData(null); // Reset detailed data on new profile fetch
-    try {
-      const token = getToken();
-      if (!token) {
-        setUserProfile(null);
-        return;
-      }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const profileData: User = await response.json();
-        setUserProfile(profileData);
-        // If user is a student and has a student number, fetch detailed data
-        if (profileData.role === 'STUDENT' && profileData.studentNumber) {
-          fetchDetailedStudentData(profileData.studentNumber);
+    
+    const userRole = user.role;
+    
+    // Now auth context provides complete basic user info for everyone
+    // For students, we also fetch additional academic data
+    if (userRole === 'STUDENT' || userRole === 'ROLE_STUDENT') {
+      try {
+        const token = getToken();
+        if (!token) {
+          setUserProfile(user); // Use basic auth info as fallback
+          setLoading(false);
+          return;
         }
-      } else if (response.status === 401) {
-        setUserProfile(null);
-      } else {
-        console.error('Failed to fetch user profile:', await response.text());
-        setUserProfile(null); // Set to null on other errors too
+        
+        console.log('Fetching student academic data from: /api/students/profile');
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/profile`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const studentAcademicData: User = await response.json();
+          // Merge basic user info from auth context with student academic data
+          const mergedProfile: User = {
+            ...user, // Basic info from auth context (userId, email, firstname, lastname, role)
+            ...studentAcademicData, // Academic info (department, advisor, gpa, etc.)
+          };
+          setUserProfile(mergedProfile);
+          // Fetch detailed student data if student number is available
+          if (mergedProfile.studentNumber) {
+            fetchDetailedStudentData(mergedProfile.studentNumber);
+          }
+        } else if (response.status === 401) {
+          setUserProfile(user); // Use basic auth info as fallback
+        } else {
+          const errorText = await response.text();
+          console.error('Failed to fetch student academic data:', errorText);
+          setUserProfile(user); // Use basic auth info as fallback
+        }
+      } catch (error) {
+        console.error('Error fetching student academic data:', error);
+        setUserProfile(user); // Use basic auth info as fallback
       }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setUserProfile(null);
-    } finally {
-      setLoading(false);
+    } else {
+      // For non-student roles, use the complete basic info from auth context
+      console.log(`User role ${userRole} using basic profile from auth context`);
+      setUserProfile(user); // Auth context now provides complete basic user info
     }
+    
+    setLoading(false);
   };
 
   useEffect(() => {

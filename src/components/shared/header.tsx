@@ -34,6 +34,10 @@ export function Header({ className }: HeaderProps) {
   const { user, logout, confirmLogout } = useAuth();
   const { userProfile } = useUser();
 
+  // Use userProfile from UserContext if available, otherwise fall back to user from auth context
+  // This ensures we always have firstname/lastname for display
+  const displayUser = userProfile || user;
+
   return (
     <header className={cn("w-full border-b bg-background sticky top-0 z-50", className)}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
@@ -50,16 +54,16 @@ export function Header({ className }: HeaderProps) {
           {user && (
             <>
               <div className="hidden sm:flex items-center gap-3">
-                <UserAvatar firstName={userProfile?.firstname} lastName={userProfile?.lastname} />
+                <UserAvatar firstName={displayUser?.firstname} lastName={displayUser?.lastname} />
                 <div className="flex flex-col items-end">
-                  <span className="font-medium">{userProfile?.firstname} {userProfile?.lastname}</span>
+                  <span className="font-medium">{displayUser?.firstname} {displayUser?.lastname}</span>
                   <span className="text-xs text-muted-foreground">
-                    {userProfile?.role ? userProfile.role.replace('ROLE_', '').charAt(0).toUpperCase() + userProfile.role.replace('ROLE_', '').slice(1).toLowerCase() : ''}
+                    {displayUser?.role ? displayUser.role.replace('ROLE_', '').charAt(0).toUpperCase() + displayUser.role.replace('ROLE_', '').slice(1).toLowerCase() : ''}
                   </span>
                 </div>
               </div>
               <div className="sm:hidden">
-                <UserAvatar firstName={userProfile?.firstname} lastName={userProfile?.lastname} />
+                <UserAvatar firstName={displayUser?.firstname} lastName={displayUser?.lastname} />
               </div>
               <Dialog>
                 <DialogTrigger asChild>
