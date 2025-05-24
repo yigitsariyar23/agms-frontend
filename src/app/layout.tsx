@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/lib/contexts/auth-context"
 import { UserProvider } from "@/lib/contexts/user-context"
+import Footer from "@/components/shared/footer"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -28,7 +29,14 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <AuthProvider>
-          <UserProvider>{children}</UserProvider>
+          <UserProvider>
+            <div className="min-h-screen flex flex-col">
+              <main className="flex-grow">
+                {children}
+              </main>
+              <Footer />
+            </div>
+          </UserProvider>
         </AuthProvider>
       </body>
     </html>
