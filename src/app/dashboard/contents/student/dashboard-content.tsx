@@ -90,9 +90,9 @@ export default function StudentDashboardContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
+        {/* Removed Student Dashboard title */}
       </div>
 
       {/* Withdrawal Alert */}
