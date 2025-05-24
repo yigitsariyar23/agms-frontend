@@ -1,25 +1,25 @@
 "use client"
 
 import { useState } from "react"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
-import { 
-  User, 
-  Mail, 
-  Hash, 
-  Building2, 
-  UserCheck, 
-  GraduationCap, 
+import {
+  User,
+  Mail,
+  Hash,
+  Building2,
+  UserCheck,
+  GraduationCap,
   FileText,
   Upload,
   CheckCircle,
@@ -27,7 +27,8 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
-  Paperclip
+  Paperclip,
+  XCircle
 } from "lucide-react"
 import { useStudent } from "@/lib/contexts/student-context"
 import FileUploadCard from "@/components/student/file-upload-card"
@@ -49,14 +50,14 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
       const fullName = `${firstName} ${lastName}`.trim()
       return fullName || 'Not assigned'
     }
-    
+
     // Handle advisor from studentProfile (could be string or object)
     if (studentProfile?.advisor) {
       // If advisor is a string, return it directly
       if (typeof studentProfile.advisor === 'string') {
         return studentProfile.advisor
       }
-      
+
       // If advisor is an object, extract the name properties
       if (typeof studentProfile.advisor === 'object' && studentProfile.advisor !== null) {
         const advisorObj = studentProfile.advisor as any
@@ -66,7 +67,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
         return fullName || 'Not assigned'
       }
     }
-    
+
     return 'Not assigned'
   }
 
@@ -99,7 +100,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
             Complete student profile and academic information
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {loading ? (
             <div className="space-y-4">
@@ -125,7 +126,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                       <p className="text-sm text-muted-foreground">Student</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
@@ -135,7 +136,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                           <p className="text-base font-medium">{studentProfile?.studentNumber || 'Not available'}</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start gap-3">
                         <Mail className="w-5 h-5 text-muted-foreground mt-0.5" />
                         <div>
@@ -144,7 +145,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
                         <Building2 className="w-5 h-5 text-muted-foreground mt-0.5" />
@@ -153,7 +154,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                           <p className="text-base font-medium">{studentData?.department || studentProfile?.department || 'Not available'}</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start gap-3">
                         <UserCheck className="w-5 h-5 text-muted-foreground mt-0.5" />
                         <div>
@@ -184,26 +185,71 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">GPA:</span>
-                          <span className="font-medium">{getGPA().toFixed(2)}</span>
-                        </div>
-                                                
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Credits:</span>
-                          <span className="font-medium">{getTotalCredits()}</span>
-                        </div>
-
+                        {/* Move Semester to Top */}
                         {studentData?.semester && (
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-muted-foreground">Semester:</span>
                             <span className="font-medium">{studentData.semester}</span>
                           </div>
                         )}
+                        {/* GPA Line with Status */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">GPA:</span>
+                          <span className="font-medium flex items-center gap-2">
+                            {getGPA().toFixed(2)}
+                            {getGPA() < 2.0 ? (
+                              <>
+                                <XCircle className="w-4 h-4 text-red-500" />
+                                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-900 font-semibold">
+                                  GPA is not enough
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-900 font-semibold">
+                                  GPA is sufficient
+                                </span>
+                              </>
+                            )}
+                          </span>
 
-                        
+
+
+
+
+
+                        </div>
+                        {/* Credits Line with Status */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Credits:</span>
+                          <span className="font-medium flex items-center gap-2">
+                            {getTotalCredits()}
+                            {getTotalCredits() < 23 ? (
+                              <>
+                                <XCircle className="w-4 h-4 text-red-500" />
+                                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-900 font-semibold">
+                                  Credits are not enough
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-900 font-semibold">
+                                  Credits are sufficient
+                                </span>
+                              </>
+                            )}
+                          </span>
+
+
+
+
+
+                        </div>
+
                         {/* Clickable Curriculum Status */}
-                        <div 
+                        <div
                           className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors"
                           onClick={() => setShowCourses(!showCourses)}
                         >
@@ -215,7 +261,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                               <ChevronRight className="w-4 h-4 text-muted-foreground" />
                             )}
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
                             {hasCompletedCurriculum ? (
                               <CheckCircle className="w-4 h-4 text-green-500" />
