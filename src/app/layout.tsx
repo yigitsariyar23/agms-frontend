@@ -4,11 +4,8 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/lib/contexts/auth-context"
 import { UserProvider } from "@/lib/contexts/user-context"
-<<<<<<< HEAD
 import { StudentProvider } from "@/lib/contexts/student-context"
-=======
 import Footer from "@/components/shared/footer"
->>>>>>> 6978a2cdfb674eef5f8b99b4bd3a6e77a3236188
 
 const inter = Inter({ subsets: ["latin"] })
 
