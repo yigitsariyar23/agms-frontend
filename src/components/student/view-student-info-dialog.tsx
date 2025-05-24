@@ -26,9 +26,11 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  Paperclip
 } from "lucide-react"
 import { useStudent } from "@/lib/contexts/student-context"
+import FileUploadCard from "@/components/student/file-upload-card"
 
 interface ViewStudentInfoDialogProps {
   open: boolean
@@ -269,27 +271,16 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                   </CardContent>
                 </Card>
 
-                {/* Attached Files Card */}
+                {/* Attached Files Card - Replaced with FileUploadCard */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
+                      <Paperclip className="w-5 h-5" />
                       Attached Files
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-center py-6">
-                      <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No files attached</p>
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-full bg-gray-800 text-white hover:bg-gray-700"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Attach Files
-                    </Button>
+                  <CardContent>
+                    <FileUploadCard />
                   </CardContent>
                 </Card>
               </div>
