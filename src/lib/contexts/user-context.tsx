@@ -39,8 +39,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
-        console.log('User profile data received:', profileData);
-        
+
         // Get all basic user info including firstname, lastname, role
         const userData: User = {
           userId: profileData.userId || '',
@@ -53,7 +52,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         
         setUser(userData);
         setUserProfile(userData);
-        console.log(`User role ${userData.role} profile loaded from API`);
       } else {
         console.error("Failed to fetch user profile", profileResponse.statusText);
         setUser(null);

@@ -31,12 +31,14 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <AuthProvider>
           <UserProvider>
-            <div className="min-h-screen flex flex-col">
-              <main className="flex-grow">
-                {children}
-              </main>
-              <Footer />
-            </div>
+            <StudentProvider>
+              <div className="min-h-screen flex flex-col">
+                <main className="flex-grow">
+                  {children}
+                </main>
+                <Footer />
+              </div>
+            </StudentProvider>
           </UserProvider>
         </AuthProvider>
       </body>

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
-import { ViewStudentInfo, StudentInfoProps } from "@/components/student/ViewStudentInfo"
+import { ViewStudentInfo, StudentInfoProps } from "@/components/student/view-student-info-dialog"
 
 interface Student {
   number: string

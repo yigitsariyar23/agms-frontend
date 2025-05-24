@@ -37,13 +37,8 @@ export default function DashboardLayout() {
 
   // Render the dashboard based on user role
   const renderDashboard = () => {
-    console.log('User profile:', userProfile); // Debug log
-    console.log('User role:', userProfile?.role); // Debug log
-    console.log('Basic user:', user); // Debug log
-    
     // Use userProfile role if available, otherwise fall back to basic user role
     const currentRole = userProfile?.role || user?.role;
-    console.log('Current role being used:', currentRole); // Debug log
     
     switch (currentRole) {
       case "STUDENT":

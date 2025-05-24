@@ -1,117 +1,243 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { useUser } from "@/lib/contexts/user-context"
-import { ViewStudentInfo, StudentInfoProps } from "@/components/student/ViewStudentInfo"
-import { DetailedStudentData } from "@/lib/contexts/user-context"
-import { Loader2 } from "lucide-react"
-import FileUploadCard from "@/components/student/FileUploadCard"
+"use client"
 
-export default function StudentDashboard() {
-  const { userProfile, detailedStudentData, loading, loadingDetailedInfo } = useUser();
-  
-  console.log('StudentDashboard - userProfile:', userProfile);
-  console.log('StudentDashboard - detailedStudentData:', detailedStudentData);
-  console.log('StudentDashboard - loading:', loading);
-  console.log('StudentDashboard - loadingDetailedInfo:', loadingDetailedInfo);
-  
-  // Get the graduation status from the user profile or set to "NOT_REQUESTED" as fallback
-  const graduationRequestStatus = userProfile?.graduationRequestStatus || "NOT_SUBMITTED";
-  // Map backend status to user-friendly display
-  const displayStatus = {
-    "PENDING": "Processing",
-    "APPROVED": "Approved",
-    "REJECTED": "Rejected",
-    "NOT_REQUESTED": "Not Requested",
-    "NOT_SUBMITTED": "Not Submitted"
-  }[graduationRequestStatus];
-  
-  // Determine if we should show the withdraw button (only if status is PENDING)
-  const showWithdrawButton = graduationRequestStatus === "PENDING";
-  
-  // Don't show any button if status is APPROVED
-  const showRequestButton = graduationRequestStatus !== "PENDING" && graduationRequestStatus !== "APPROVED";
-  
-  // Helper function to get advisor name as string
-  const getAdvisorName = (): string => {
-    // First try to get advisor from detailed student data
-    if (detailedStudentData?.advisor?.firstName && detailedStudentData?.advisor?.lastName) {
-      return `${detailedStudentData.advisor.firstName} ${detailedStudentData.advisor.lastName}`;
+import { useState } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CheckCircle, Clock, XCircle, User, GraduationCap } from "lucide-react"
+import { ViewStudentInfoDialog } from "@/components/student/view-student-info-dialog"
+import { GraduationRequestStatus } from "@/lib/types/graduation-status"
+import { useStudent } from "@/lib/contexts/student-context"
+
+interface GraduationStatusData {
+  status: GraduationRequestStatus
+  message?: string
+}
+
+export default function StudentDashboardContent() {
+  const [graduationStatus, setGraduationStatus] = useState<GraduationStatusData>({
+    status: "NOT_SUBMITTED"
+  })
+  const [showWithdrawnAlert, setShowWithdrawnAlert] = useState(false)
+  const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false)
+  const { hasCompletedCurriculum, getCurriculumStatus, loading } = useStudent()
+
+  const handleRequestGraduation = () => {
+    // Check if curriculum is completed before allowing graduation request
+    if (hasCompletedCurriculum === false) {
+      setGraduationStatus({ 
+        status: "NOT_SUBMITTED", 
+        message: "You cannot request graduation until you have completed all curriculum requirements." 
+      })
+      return
     }
-    
-    // If userProfile.advisor is an object, extract the name
-    if (userProfile?.advisor && typeof userProfile.advisor === 'object') {
-      const advisorObj = userProfile.advisor as any;
-      if (advisorObj.firstName && advisorObj.lastName) {
-        return `${advisorObj.firstName} ${advisorObj.lastName}`;
-      }
+
+    setGraduationStatus({ 
+      status: "PENDING", 
+      message: "Your graduation request has been submitted and is being reviewed." 
+    })
+  }
+
+  const handleWithdrawRequest = () => {
+    setGraduationStatus({ 
+      status: "NOT_SUBMITTED", 
+      message: "Your graduation request has been withdrawn." 
+    })
+    setShowWithdrawnAlert(true)
+    setTimeout(() => setShowWithdrawnAlert(false), 5000) // Auto hide after 5 seconds
+  }
+
+  const getStatusIcon = (status: GraduationRequestStatus) => {
+    switch (status) {
+      case "APPROVED":
+        return <CheckCircle className="w-5 h-5 text-green-500" />
+      case "PENDING":
+        return <Clock className="w-5 h-5 text-yellow-500" />
+      case "REJECTED":
+        return <XCircle className="w-5 h-5 text-red-500" />
+      default:
+        return <GraduationCap className="w-5 h-5 text-gray-500" />
     }
-    
-    // If userProfile.advisor is a string, use it directly
-    if (typeof userProfile?.advisor === 'string') {
-      return userProfile.advisor;
+  }
+
+  const getStatusText = (status: GraduationRequestStatus) => {
+    switch (status) {
+      case "NOT_SUBMITTED":
+        return "Not Requested"
+      case "PENDING":
+        return "Under Review"
+      case "APPROVED":
+        return "Approved"
+      case "REJECTED":
+        return "Rejected"
+      default:
+        return "Unknown"
     }
-    
-    // Fallback
-    return "N/A";
-  };
-  
-  // Construct studentInfoForView by merging userProfile and detailedStudentData
-  const studentInfoForView: StudentInfoProps['student'] | null = userProfile
-    ? {
-        name: `${userProfile.firstname || ""} ${userProfile.lastname || ""}`.trim(),
-        number: userProfile.studentNumber || detailedStudentData?.studentNumber || "N/A",
-        email: userProfile.email,
-        department: detailedStudentData?.department || userProfile.department || "N/A",
-        advisor: getAdvisorName(),
-        gpa: detailedStudentData?.gpa ?? userProfile.gpa,
-        credits: detailedStudentData?.totalCredit ?? userProfile.creditsCompleted,
-        semester: detailedStudentData?.semester ?? userProfile.semester,
-        graduationStatus: displayStatus,
-      }
-    : null;
-  
-    if (loading) {    return (      <div className="flex h-screen items-center justify-center" suppressHydrationWarning>        <Loader2 className="h-8 w-8 animate-spin text-primary" />      </div>    );  }
+  }
+
+  const getStatusBadgeVariant = (status: GraduationRequestStatus) => {
+    switch (status) {
+      case "APPROVED":
+        return "default" as const
+      case "PENDING":
+        return "secondary" as const
+      case "REJECTED":
+        return "destructive" as const
+      default:
+        return "outline" as const
+    }
+  }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-2xl font-bold mb-6">Student Dashboard</h1>
-      
-      {/* Display Student Information */}
-            {loadingDetailedInfo && !detailedStudentData && (        <div className="mb-8 flex items-center justify-center p-4" suppressHydrationWarning>           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />            <span className="ml-2 text-muted-foreground">Loading detailed information...</span>        </div>      )}
-      {studentInfoForView && (
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">My Information</h2>
-          <ViewStudentInfo student={studentInfoForView} />
-        </section>
-      )}
-      {!studentInfoForView && !loading && (
-         <p className="mb-8 text-muted-foreground">Could not load student information.</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
+      </div>
+
+      {/* Withdrawal Alert */}
+      {showWithdrawnAlert && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <XCircle className="h-4 w-4 text-orange-500" />
+          <AlertDescription className="text-orange-700">
+            <strong>Graduation request withdrawn</strong>
+            <br />
+            Your request has been withdrawn.
+          </AlertDescription>
+        </Alert>
       )}
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg sm:text-xl">Graduation Status</CardTitle>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Graduation Status Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="w-6 h-6" />
+              Graduation Status
+            </CardTitle>
+            <CardDescription>
+              Track your graduation application progress
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-sm sm:text-base mb-4">Current Status: <span className="font-medium">{displayStatus}</span></div>
-            {showWithdrawButton ? (
-              <Button 
-                className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white rounded-md px-4 py-2 text-sm font-medium"
-              >
-                Withdraw Request
-              </Button>
-            ) : showRequestButton && (
-              <Button 
-                className="w-full sm:w-auto bg-black hover:bg-gray-800 text-white rounded-md px-4 py-2 text-sm font-medium"
-              >
-                Request Graduation
-              </Button>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Current Status:</span>
+              <div className="flex items-center gap-2">
+                {getStatusIcon(graduationStatus.status)}
+                <Badge variant={getStatusBadgeVariant(graduationStatus.status)}>
+                  {getStatusText(graduationStatus.status)}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Curriculum Completion Status */}
+            {!loading && hasCompletedCurriculum !== null && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Curriculum:</span>
+                <div className="flex items-center gap-2">
+                  {hasCompletedCurriculum ? (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Clock className="w-4 h-4 text-yellow-500" />
+                  )}
+                  <Badge variant={hasCompletedCurriculum ? "default" : "secondary"}>
+                    {getCurriculumStatus()}
+                  </Badge>
+                </div>
+              </div>
             )}
+
+            {graduationStatus.message && (
+              <div className="p-3 bg-muted rounded-md">
+                <p className="text-sm text-muted-foreground">
+                  {graduationStatus.message}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {graduationStatus.status === "NOT_SUBMITTED" && (
+                <>
+                  <Button 
+                    onClick={handleRequestGraduation}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                    disabled={hasCompletedCurriculum === false}
+                  >
+                    Request Graduation
+                  </Button>
+                  {hasCompletedCurriculum === false && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Complete all curriculum requirements to request graduation
+                    </p>
+                  )}
+                </>
+              )}
+              
+              {graduationStatus.status === "PENDING" && (
+                <Button 
+                  onClick={handleWithdrawRequest}
+                  variant="outline"
+                  className="border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  Withdraw Request
+                </Button>
+              )}
+
+              {graduationStatus.status === "REJECTED" && (
+                <>
+                  <Button 
+                    onClick={handleRequestGraduation}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                    disabled={hasCompletedCurriculum === false}
+                  >
+                    Request Graduation
+                  </Button>
+                  {hasCompletedCurriculum === false && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Complete all curriculum requirements to request graduation
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
-        <FileUploadCard />
+
+        {/* Student Information Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-6 h-6" />
+              Student Information
+            </CardTitle>
+            <CardDescription>
+              View and manage your personal information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Access your complete student profile, including personal details, 
+                academic information, and contact details.
+              </p>
+            </div>
+            
+            <Button 
+              onClick={() => setIsStudentInfoDialogOpen(true)}
+              variant="outline"
+              className="w-full"
+            >
+              View Student Info
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Student Info Dialog */}
+      <ViewStudentInfoDialog 
+        open={isStudentInfoDialogOpen}
+        onOpenChange={setIsStudentInfoDialogOpen}
+      />
     </div>
   )
-} 
+}

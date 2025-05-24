@@ -12,6 +12,8 @@ interface StudentContextType {
   loading: boolean;
   loadingDetailedInfo: boolean;
   fetchStudentProfile: () => Promise<void>;
+  hasCompletedCurriculum: boolean | null;
+  getCurriculumStatus: () => "Completed" | "Not Completed";
 }
 
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
@@ -129,12 +131,30 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const getCurriculumStatus = (): "Completed" | "Not Completed" => {
+    // Check if hasCompletedCurriculum is available from backend
+    if (studentData?.hasCompletedCurriculum !== undefined) {
+      return studentData.hasCompletedCurriculum ? "Completed" : "Not Completed";
+    }
+    
+    // Fallback to calculating based on credits if backend value is not available
+    const totalCredits = studentData?.totalCredit || studentProfile?.totalCredits;
+    const creditsCompleted = studentProfile?.creditsCompleted;
+    
+    if (totalCredits && creditsCompleted && creditsCompleted >= totalCredits) {
+      return "Completed";
+    }
+    return "Not Completed";
+  };
+
   const value = {
     studentProfile,
     studentData,
     loading,
     loadingDetailedInfo,
-    fetchStudentProfile, 
+    fetchStudentProfile,
+    hasCompletedCurriculum: studentData?.hasCompletedCurriculum ?? null,
+    getCurriculumStatus,
   };
 
   return <StudentContext.Provider value={value}>{children}</StudentContext.Provider>;
