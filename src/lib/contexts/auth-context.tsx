@@ -1,12 +1,11 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '../types/user';
 import { useAuthStore } from '../store/auth-store';
 import { getToken, withAuth } from '../utils/jwt';
 
 interface AuthContextType {
-  user: User | null;
+  isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
@@ -14,7 +13,7 @@ interface AuthContextType {
   showLogoutConfirm: boolean;
   setShowLogoutConfirm: (show: boolean) => void;
   navigateToResetPasswordRequest: (email: string) => Promise<{ success: boolean; message: string }>;
-  fetchUserProfile: (token: string) => Promise<User | null>;
+  token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,9 +21,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [token, setTokenState] = useState<string | null>(null);
   const { 
-    user, 
-    setUser, 
     setToken, 
     setLoading: setStoreLoading, 
     initialize,
@@ -32,53 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useAuthStore();
 
   useEffect(() => {
-    // Initialize auth state from cookies and fetch profile if token exists
+    // Initialize auth state from cookies
     const initAuth = async () => {
-      await initialize(); // initialize will set token and potentially basic user info from token
+      await initialize();
       const currentToken = getToken();
-      if (currentToken && !user) { // If token exists but user not fully loaded by store's init
-        setLoading(true);
-        await fetchUserProfile(currentToken);
-        setLoading(false);
-      }
-      setLoading(false); 
+      setTokenState(currentToken);
+      setIsAuthenticated(!!currentToken);
+      setLoading(false);
     };
     initAuth();
-  }, [initialize]); // Removed user from dependency array to avoid re-triggering fetchUserProfile unnecessarily
-
-  const fetchUserProfile = async (token: string): Promise<User | null> => {
-    try {
-      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (profileResponse.ok) {
-        const profileData = await profileResponse.json();
-        console.log('User profile data received:', profileData);
-        
-        // Now we get all basic user info including firstname, lastname, role
-        const userData: User = {
-          userId: profileData.userId || '',
-          email: profileData.email || '',
-          firstname: profileData.firstname || '',
-          lastname: profileData.lastname || '',
-          role: profileData.role,
-          studentNumber: profileData.studentNumber, // Include if user is a student
-        };
-        setUser(userData);
-        return userData;
-      } else {
-        console.error("Failed to fetch user profile", profileResponse.statusText);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      return null;
-    }
-  };
+  }, [initialize]);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     setLoading(true);
@@ -99,17 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.ok && data.token) {
         setToken(data.token); // Store token in cookie via auth-store
-        
-        // Fetch user role using the new token
-        const userProfile = await fetchUserProfile(data.token);
-
-        if (userProfile) {
-          return { success: true, message: data.message || "Login successful!" };
-        } else {
-          // If role fetch failed after successful login and token retrieval
-          clearAuth(); // Clear the potentially bad token
-          return { success: false, message: "Login succeeded but failed to fetch user role." };
-        }
+        setTokenState(data.token);
+        setIsAuthenticated(true);
+        return { success: true, message: data.message || "Login successful!" };
       } else {
         return { success: false, message: data.message || "Login failed" };
       }
@@ -149,7 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error during logout prep:', error);
     } finally {
       clearAuth(); // Clear auth state and remove JWT cookie from store
-      setUser(null); // Explicitly set user to null in context's view if not already handled by clearAuth listener
+      setTokenState(null);
+      setIsAuthenticated(false);
       setLoading(false);
       setStoreLoading(false);
       setShowLogoutConfirm(false);
@@ -179,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = {
-    user,
+    isAuthenticated,
     loading,
     login,
     logout,
@@ -187,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     showLogoutConfirm,
     setShowLogoutConfirm,
     navigateToResetPasswordRequest,
-    fetchUserProfile, // expose fetchUserProfile if needed elsewhere, or keep it internal
+    token,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

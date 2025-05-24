@@ -17,19 +17,21 @@ import { useUser } from "@/lib/contexts/user-context"
 import ErrorBoundary from "@/components/ErrorBoundary"
 
 export default function DashboardLayout() {
-  const { user, loading } = useAuth()
-  const { userProfile } = useUser();
+  const { isAuthenticated, loading: authLoading } = useAuth()
+  const { user, userProfile, loading: userLoading } = useUser();
   const router = useRouter()
 
+  const loading = authLoading || userLoading;
+
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !isAuthenticated) {
       router.push("/auth?tab=login")
     }
-  }, [user, loading, router])
+  }, [isAuthenticated, loading, router])
 
   if (loading) {    return (      <div className="flex h-screen items-center justify-center" suppressHydrationWarning>        <Loader2 className="h-8 w-8 animate-spin text-primary" />      </div>    )  }
 
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return null
   }
 
@@ -37,9 +39,9 @@ export default function DashboardLayout() {
   const renderDashboard = () => {
     console.log('User profile:', userProfile); // Debug log
     console.log('User role:', userProfile?.role); // Debug log
-    console.log('Auth user:', user); // Debug log
+    console.log('Basic user:', user); // Debug log
     
-    // Use userProfile role if available, otherwise fall back to auth user role
+    // Use userProfile role if available, otherwise fall back to basic user role
     const currentRole = userProfile?.role || user?.role;
     console.log('Current role being used:', currentRole); // Debug log
     

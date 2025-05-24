@@ -31,10 +31,10 @@ interface HeaderProps {
 }
 
 export function Header({ className }: HeaderProps) {
-  const { user, logout, confirmLogout } = useAuth();
-  const { userProfile } = useUser();
+  const { isAuthenticated, logout } = useAuth();
+  const { user, userProfile } = useUser();
 
-  // Use userProfile from UserContext if available, otherwise fall back to user from auth context
+  // Use userProfile if available, otherwise fall back to basic user data
   // This ensures we always have firstname/lastname for display
   const displayUser = userProfile || user;
 
@@ -51,7 +51,7 @@ export function Header({ className }: HeaderProps) {
 
         {/* Right: User Avatar, Name and Logout */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {user && (
+          {isAuthenticated && displayUser && (
             <>
               <div className="hidden sm:flex items-center gap-3">
                 <UserAvatar firstName={displayUser?.firstname} lastName={displayUser?.lastname} />

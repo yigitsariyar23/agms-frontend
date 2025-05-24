@@ -13,7 +13,6 @@ export function useUserProfile() {
     const isDepartmentSecretary = userProfile?.role === 'ROLE_DEPARTMENT_SECRETARY';
     const isDeansOffice = userProfile?.role === 'ROLE_DEANS_OFFICE';
     const isStudentAffairs = userProfile?.role === 'ROLE_STUDENT_AFFAIRS';
-    const isAdmin = userProfile?.role === 'ROLE_ADMIN';
   
   return {
     user: userProfile,
@@ -24,7 +23,6 @@ export function useUserProfile() {
     isDepartmentSecretary,
     isDeansOffice,
     isStudentAffairs,
-    isAdmin,
     fetchUserProfile,
   };
 } 

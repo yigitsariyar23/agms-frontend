@@ -8,14 +8,14 @@ import { useAuth } from "@/lib/contexts/auth-context"
 import { Loader2 } from "lucide-react"
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && isAuthenticated) {
       router.push("/dashboard")
     }
-  }, [user, loading, router])
+  }, [isAuthenticated, loading, router])
 
   if (loading) {
     return (
