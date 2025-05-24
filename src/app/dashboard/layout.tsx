@@ -14,6 +14,7 @@ import DeansOfficeDashboard from "./contents/deans_office/dashboard-content"
 import StudentAffairsDashboard from "./contents/student_affairs/dashboard-content"
 import Header from "@/components/shared/header"
 import { useUser } from "@/lib/contexts/user-context"
+import { GraduationProvider } from "@/lib/contexts/graduation-context"
 import ErrorBoundary from "@/components/ErrorBoundary"
 
 export default function DashboardLayout() {
@@ -45,7 +46,9 @@ export default function DashboardLayout() {
       case "ROLE_STUDENT":
         return (
           <ErrorBoundary>
-            <StudentDashboard />
+            <GraduationProvider>
+              <StudentDashboard />
+            </GraduationProvider>
           </ErrorBoundary>
         )
       case "ADVISOR":

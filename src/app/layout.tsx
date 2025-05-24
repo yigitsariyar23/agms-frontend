@@ -5,7 +5,9 @@ import "./globals.css"
 import { AuthProvider } from "@/lib/contexts/auth-context"
 import { UserProvider } from "@/lib/contexts/user-context"
 import { StudentProvider } from "@/lib/contexts/student-context"
+import { AdvisorProvider } from "@/lib/contexts/advisor-context"
 import Footer from "@/components/shared/footer/footer"
+import { Toaster } from "sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -32,12 +34,15 @@ export default function RootLayout({
         <AuthProvider>
           <UserProvider>
             <StudentProvider>
-              <div className="min-h-screen flex flex-col">
-                <main className="flex-grow">
-                  {children}
-                </main>
-                <Footer />
-              </div>
+              <AdvisorProvider>
+                <div className="min-h-screen flex flex-col">
+                  <main className="flex-grow">
+                    {children}
+                  </main>
+                  <Footer />
+                </div>
+                <Toaster />
+              </AdvisorProvider>
             </StudentProvider>
           </UserProvider>
         </AuthProvider>

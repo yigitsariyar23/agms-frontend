@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,44 +9,19 @@ import { CheckCircle, Clock, XCircle, User, GraduationCap } from "lucide-react"
 import { ViewStudentInfoDialog } from "@/components/student/view-student-info-dialog"
 import { GraduationRequestStatus } from "@/lib/types/graduation-status"
 import { useStudent } from "@/lib/contexts/student-context"
-
-interface GraduationStatusData {
-  status: GraduationRequestStatus
-  message?: string
-}
+import { useGraduation } from "@/lib/contexts/graduation-context"
 
 export default function StudentDashboardContent() {
-  const [graduationStatus, setGraduationStatus] = useState<GraduationStatusData>({
-    status: "NOT_SUBMITTED"
-  })
-  const [showWithdrawnAlert, setShowWithdrawnAlert] = useState(false)
+  const {
+    graduationStatus,
+    loading: graduationLoading,
+    alert: graduationAlert,
+    requestGraduation,
+    withdrawGraduationRequest,
+    clearAlert
+  } = useGraduation()
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false)
-  const { hasCompletedCurriculum, getCurriculumStatus, loading } = useStudent()
-
-  const handleRequestGraduation = () => {
-    // Check if curriculum is completed before allowing graduation request
-    if (hasCompletedCurriculum === false) {
-      setGraduationStatus({ 
-        status: "NOT_SUBMITTED", 
-        message: "You cannot request graduation until you have completed all curriculum requirements." 
-      })
-      return
-    }
-
-    setGraduationStatus({ 
-      status: "PENDING", 
-      message: "Your graduation request has been submitted and is being reviewed." 
-    })
-  }
-
-  const handleWithdrawRequest = () => {
-    setGraduationStatus({ 
-      status: "NOT_SUBMITTED", 
-      message: "Your graduation request has been withdrawn." 
-    })
-    setShowWithdrawnAlert(true)
-    setTimeout(() => setShowWithdrawnAlert(false), 5000) // Auto hide after 5 seconds
-  }
+  const { hasCompletedCurriculum, getCurriculumStatus, loading: studentLoading } = useStudent()
 
   const getStatusIcon = (status: GraduationRequestStatus) => {
     switch (status) {
@@ -89,20 +64,28 @@ export default function StudentDashboardContent() {
     }
   }
 
+  useEffect(() => {
+    if (graduationAlert?.message && typeof window !== "undefined") {
+      console.log(`Graduation Alert: ${graduationAlert.type} - ${graduationAlert.message}`);
+    }
+  }, [graduationAlert, clearAlert])
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         {/* Removed Student Dashboard title */}
       </div>
 
-      {/* Withdrawal Alert */}
-      {showWithdrawnAlert && (
-        <Alert className="border-orange-200 bg-orange-50">
-          <XCircle className="h-4 w-4 text-orange-500" />
-          <AlertDescription className="text-orange-700">
-            <strong>Graduation request withdrawn</strong>
+      {/* Global Alert Display Area - Using the new alert from context */}
+      {graduationAlert && (
+        <Alert className={`border-${graduationAlert.type === 'error' ? 'red' : graduationAlert.type === 'success' ? 'green' : 'blue'}-200 bg-${graduationAlert.type === 'error' ? 'red' : graduationAlert.type === 'success' ? 'green' : 'blue'}-50`}>
+          {graduationAlert.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
+          {graduationAlert.type === 'error' && <XCircle className="h-4 w-4 text-red-500" />}
+          {graduationAlert.type === 'info' && <Clock className="h-4 w-4 text-blue-500" />}
+          <AlertDescription className={`text-${graduationAlert.type === 'error' ? 'red' : graduationAlert.type === 'success' ? 'green' : 'blue'}-700`}>
+            <strong>{graduationAlert.type.charAt(0).toUpperCase() + graduationAlert.type.slice(1)}</strong>
             <br />
-            Your request has been withdrawn.
+            {graduationAlert.message}
           </AlertDescription>
         </Alert>
       )}
@@ -131,7 +114,7 @@ export default function StudentDashboardContent() {
             </div>
 
             {/* Curriculum Completion Status */}
-            {!loading && hasCompletedCurriculum !== null && (
+            {!studentLoading && hasCompletedCurriculum !== null && (
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Curriculum:</span>
                 <div className="flex items-center gap-2">
@@ -159,11 +142,11 @@ export default function StudentDashboardContent() {
               {graduationStatus.status === "NOT_SUBMITTED" && (
                 <>
                   <Button 
-                    onClick={handleRequestGraduation}
+                    onClick={requestGraduation}
                     className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
-                    disabled={hasCompletedCurriculum === false}
+                    disabled={hasCompletedCurriculum === false || graduationLoading}
                   >
-                    Request Graduation
+                    {graduationLoading ? "Submitting..." : "Request Graduation"}
                   </Button>
                   {hasCompletedCurriculum === false && (
                     <p className="text-xs text-muted-foreground mt-1">
@@ -175,22 +158,23 @@ export default function StudentDashboardContent() {
               
               {graduationStatus.status === "PENDING" && (
                 <Button 
-                  onClick={handleWithdrawRequest}
+                  onClick={withdrawGraduationRequest}
                   variant="outline"
                   className="border-red-300 text-red-600 hover:bg-red-50"
+                  disabled={graduationLoading}
                 >
-                  Withdraw Request
+                  {graduationLoading && graduationStatus.status === "PENDING" ? "Withdrawing..." : "Withdraw Request"}
                 </Button>
               )}
 
               {graduationStatus.status === "REJECTED" && (
                 <>
                   <Button 
-                    onClick={handleRequestGraduation}
+                    onClick={requestGraduation}
                     className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
-                    disabled={hasCompletedCurriculum === false}
+                    disabled={hasCompletedCurriculum === false || graduationLoading}
                   >
-                    Request Graduation
+                    {graduationLoading ? "Submitting..." : "Request Graduation Again"}
                   </Button>
                   {hasCompletedCurriculum === false && (
                     <p className="text-xs text-muted-foreground mt-1">
