@@ -45,7 +45,17 @@ const Footer = () => {
                         AGMS
                     </button>
                     . All rights reserved.
-
+                </p>
+                <p className="text-xs text-center mt-1">
+                    Licensed under the{' '}
+                    <a
+                        href="https://opensource.org/licenses/MIT"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-gray-600"
+                    >
+                        MIT License
+                    </a>.
                 </p>
             </footer>
 
