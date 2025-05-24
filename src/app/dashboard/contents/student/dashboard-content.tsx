@@ -4,6 +4,7 @@ import { useUser } from "@/lib/contexts/user-context"
 import { ViewStudentInfo, StudentInfoProps } from "@/components/student/ViewStudentInfo"
 import { DetailedStudentData } from "@/lib/contexts/user-context"
 import { Loader2 } from "lucide-react"
+import FileUploadCard from "@/components/student/FileUploadCard"
 
 export default function StudentDashboard() {
   const { userProfile, detailedStudentData, loading, loadingDetailedInfo } = useUser();
@@ -93,6 +94,7 @@ export default function StudentDashboard() {
             )}
           </CardContent>
         </Card>
+        <FileUploadCard />
       </div>
     </div>
   )

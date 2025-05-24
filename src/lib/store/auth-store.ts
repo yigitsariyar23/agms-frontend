@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { User } from '../types/user';
-import { setCookie, removeCookie } from '../utils/cookies';
-import { getToken, getUserFromToken, isTokenExpired } from '../utils/jwt';
+import { setCookie, removeCookie, getCookie } from '../utils/cookies';
+import { decodeToken, isTokenExpired } from '../utils/jwt';
 
 interface AuthState {
   user: User | null;
@@ -11,42 +11,27 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
-  initialize: () => void;
+  initialize: () => Promise<void>;
   clearAuth: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   token: null,
   loading: true,
   
   setUser: (user: User | null) => {
-    set({ user, isAuthenticated: !!user });
+    set({ user, isAuthenticated: !!user, loading: false });
   },
   
   setToken: (token: string | null) => {
     if (token) {
-      // Save the token to cookie
       setCookie('jwt_token', token);
-      
-      // Extract user info from token if available
-      const tokenData = getUserFromToken(token);
-      const user = tokenData?.user as User | undefined;
-      
-      const updateData: Partial<AuthState> = { 
-        token, 
-        isAuthenticated: true
-      };
-      
-      if (user) {
-        updateData.user = user;
-      }
-      
-      set(updateData);
+      set({ token, isAuthenticated: true });
     } else {
       removeCookie('jwt_token');
-      set({ token: null, isAuthenticated: false });
+      set({ token: null, isAuthenticated: false, user: null });
     }
   },
   
@@ -54,35 +39,26 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading });
   },
   
-  initialize: () => {
-    const token = getToken();
-    if (token && !isTokenExpired(token)) {
-      // Valid token exists
-      const tokenData = getUserFromToken(token);
-      
-      const updateData: Partial<AuthState> = {
-        token,
+  initialize: async () => {
+    set({ loading: true });
+    const tokenFromCookie = getCookie('jwt_token');
+
+    if (tokenFromCookie && !isTokenExpired(tokenFromCookie)) {
+      set({
+        token: tokenFromCookie,
         isAuthenticated: true,
         loading: false
-      };
-      
-      if (tokenData?.user) {
-        updateData.user = tokenData.user as User;
-      }
-      
-      set(updateData);
-    } else if (token && isTokenExpired(token)) {
-      // Token exists but expired
-      removeCookie('jwt_token');
-      set({ isAuthenticated: false, user: null, token: null, loading: false });
+      });
     } else {
-      // No token
+      if (tokenFromCookie) {
+        removeCookie('jwt_token');
+      }
       set({ isAuthenticated: false, user: null, token: null, loading: false });
     }
   },
   
   clearAuth: () => {
     removeCookie('jwt_token');
-    set({ user: null, token: null, isAuthenticated: false });
+    set({ user: null, token: null, isAuthenticated: false, loading: false });
   }
 })); 

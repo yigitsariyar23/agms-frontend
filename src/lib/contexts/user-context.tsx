@@ -104,7 +104,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const profileData: User = await response.json();
         setUserProfile(profileData);
         // If user is a student and has a student number, fetch detailed data
-        if (profileData.role === 'ROLE_STUDENT' && profileData.studentNumber) {
+        if (profileData.role === 'STUDENT' && profileData.studentNumber) {
           fetchDetailedStudentData(profileData.studentNumber);
         }
       } else if (response.status === 401) {

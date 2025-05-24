@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types/user';
 import { useAuthStore } from '../store/auth-store';
+import { getToken, withAuth } from '../utils/jwt';
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +14,7 @@ interface AuthContextType {
   showLogoutConfirm: boolean;
   setShowLogoutConfirm: (show: boolean) => void;
   navigateToResetPasswordRequest: (email: string) => Promise<{ success: boolean; message: string }>;
+  fetchUserProfile: (token: string) => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,60 +32,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useAuthStore();
 
   useEffect(() => {
-    // Initialize auth state from cookies
-    initialize();
-    setLoading(false);
-  }, [initialize]);
+    // Initialize auth state from cookies and fetch profile if token exists
+    const initAuth = async () => {
+      await initialize(); // initialize will set token and potentially basic user info from token
+      const currentToken = getToken();
+      if (currentToken && !user) { // If token exists but user not fully loaded by store's init
+        setLoading(true);
+        await fetchUserProfile(currentToken);
+        setLoading(false);
+      }
+      setLoading(false); 
+    };
+    initAuth();
+  }, [initialize]); // Removed user from dependency array to avoid re-triggering fetchUserProfile unnecessarily
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+  const fetchUserProfile = async (token: string): Promise<User | null> => {
     try {
-      setLoading(true);
-      setStoreLoading(true);
-      // Check if backend is available
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-          // Store JWT token in cookie
-          if (data.token) {
-            setToken(data.token);
-          }
-          
-          // Store user data
-          const userData: User = {
-            userId: data.id || '1',
-            email,
-            firstname: data.firstName || email,
-            lastname: data.lastName || email,
-            role: data.role || 'ROLE_STUDENT'
-          };
-          
-          setUser(userData);
-          return { success: true, message: data.message || "Login successful!" };
-        } else {
-          return { success: false, message: data.message || "Login failed" };
-        }
-      } catch (networkError) {
-        console.error('Network error:', networkError);
-        return { 
-          success: false, 
-          message: "Cannot connect to the server. Please ensure the backend server is running."
+      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        const userData: User = {
+          userId: profileData.userId,
+          email: profileData.email,
+          firstname: profileData.firstname,
+          lastname: profileData.lastname,
+          role: profileData.role, // Make sure this matches the Role type in frontend
+          studentNumber: profileData.studentNumber,
+          // Add other fields from UserProfileResponse as needed, ensuring they exist in frontend User type
         };
+        setUser(userData);
+        return userData;
+      } else {
+        console.error("Failed to fetch user profile", profileResponse.statusText);
+        // If profile fetch fails, might indicate an issue with the token or backend
+        // Depending on policy, you might want to clear auth here if profile is essential
+        // clearAuth(); 
+        return null;
       }
     } catch (error) {
-      console.error('Login failed:', error);
-      return { success: false, message: "Login failed due to an unexpected error." };
+      console.error("Error fetching user profile:", error);
+      return null;
+    }
+  };
+
+  const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+    setLoading(true);
+    setStoreLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.token) {
+        setToken(data.token); // Store token in cookie via auth-store
+        
+        // Fetch user profile using the new token
+        const userProfile = await fetchUserProfile(data.token);
+
+        if (userProfile) {
+          return { success: true, message: data.message || "Login successful!" };
+        } else {
+          // If profile fetch failed after successful login and token retrieval
+          clearAuth(); // Clear the potentially bad token
+          return { success: false, message: "Login succeeded but failed to fetch user profile." };
+        }
+      } else {
+        return { success: false, message: data.message || "Login failed" };
+      }
+    } catch (networkError) {
+      console.error('Network error during login:', networkError);
+      return { 
+        success: false, 
+        message: "Cannot connect to the server. Please ensure the backend server is running."
+      };
     } finally {
       setLoading(false);
       setStoreLoading(false);
@@ -95,30 +131,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    setLoading(true);
+    setStoreLoading(true);
     try {
-      setLoading(true);
-      setStoreLoading(true);
-      
-      // Clear auth state and remove JWT cookie
-      clearAuth();
-      
-      // Additional backend logout if needed
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-      } catch (error) {
-        console.error('Logout API call failed:', error);
-        // Continue with logout even if API call fails
+      const currentToken = getToken();
+      if (currentToken) {
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
+            method: 'POST',
+            headers: withAuth().headers, // Use withAuth to include Authorization header
+          });
+        } catch (error) {
+          console.error('Logout API call failed:', error);
+          // Continue with client-side logout even if API call fails
+        }
       }
-      
     } catch (error) {
-      console.error('Logout failed:', error);
-      throw error;
+      console.error('Error during logout prep:', error);
     } finally {
+      clearAuth(); // Clear auth state and remove JWT cookie from store
+      setUser(null); // Explicitly set user to null in context's view if not already handled by clearAuth listener
       setLoading(false);
       setStoreLoading(false);
       setShowLogoutConfirm(false);
@@ -135,10 +167,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email }),
       });
 
+      const data = await response.json(); // Assuming backend sends a JSON response
       if (response.ok) {
-        return { success: true, message: "Password reset request sent successfully. Please check your email for the reset link." };
+        return { success: true, message: data.message || "Password reset request sent successfully. Please check your email for the reset link." };
       } else {
-        return { success: false, message: "Failed to send password reset request." };
+        return { success: false, message: data.message || "Failed to send password reset request." };
       }
     } catch (error) {
       console.error('Password reset request failed:', error);
@@ -155,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     showLogoutConfirm,
     setShowLogoutConfirm,
     navigateToResetPasswordRequest,
+    fetchUserProfile, // expose fetchUserProfile if needed elsewhere, or keep it internal
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
