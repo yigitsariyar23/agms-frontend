@@ -284,11 +284,12 @@ export default function AdvisorDashboard() {
       </Dialog>
 
       {/* Student Info Modal */}
-      {modal && modal.student && (
+      {modal && modal.type === "info" && modal.student && (
         <ViewStudentInfoDialog 
-          open={!!modal && modal.type === "info"} 
+          open={true} 
           onOpenChange={(open) => !open && setModal(null)}
-          studentData={modal.student} 
+          studentNumber={modal.student.studentNumber}
+          initialStudentData={modal.student}
         />
       )}
 

@@ -47,7 +47,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
           firstname: profileData.firstname || '',
           lastname: profileData.lastname || '',
           role: profileData.role,
-          studentNumber: profileData.studentNumber, // Include if user is a studen
+          studentNumber: profileData.studentNumber,
+          instituteNumber: profileData.instituteNumber,
+          graduationRequestStatus: profileData.graduationRequestStatus,
+          advisor: profileData.advisor,
+          gpa: profileData.gpa,
+          creditsCompleted: profileData.creditsCompleted,
+          totalCredits: profileData.totalCredits,
+          semester: profileData.semester,
+          department: profileData.department,
+          office: profileData.office,
+          title: profileData.title,
+          phone: profileData.phone,
+          advisees: profileData.advisees,
         };
         
         setUser(userData);

@@ -139,8 +139,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const apiData = await response.json();
-        console.log("response", response);
-        console.log("apiData", apiData);
         
         // Transform API response to match AdvisorStudent interface
         const studentsData: AdvisorStudent[] = apiData.map((item: any) => ({
@@ -337,7 +335,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     if (user && (user.role === 'ADVISOR' || user.role === 'ROLE_ADVISOR')) {
       fetchAdvisorProfile();
     } else {
-      console.log("user is not an advisor");
       setAdvisorProfile(null);
       setStudents([]);
     }

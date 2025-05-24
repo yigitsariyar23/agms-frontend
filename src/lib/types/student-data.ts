@@ -15,6 +15,7 @@ export interface StudentData {
     totalCredit?: number;
     hasCompletedCurriculum?: boolean;
     semester?: number;
+    email?: string;
     department?: string;
     advisor?: AdvisorDetails | null;
     courses?: Course[];

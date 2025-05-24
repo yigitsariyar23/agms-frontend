@@ -21,7 +21,7 @@ export default function StudentDashboardContent() {
     clearAlert
   } = useGraduation()
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false)
-  const { hasCompletedCurriculum, getCurriculumStatus, loading: studentLoading } = useStudent()
+  const { studentProfile, hasCompletedCurriculum, getCurriculumStatus, loading: studentLoading } = useStudent()
 
   const getStatusIcon = (status: GraduationRequestStatus) => {
     switch (status) {
@@ -70,6 +70,19 @@ export default function StudentDashboardContent() {
     }
   }, [graduationAlert, clearAlert])
 
+  // Early return or skeleton if studentProfile or studentNumber is not yet loaded
+  if (studentLoading || !studentProfile?.studentNumber) {
+    return (
+      <div className="space-y-6 p-6 animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-48 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -114,7 +127,7 @@ export default function StudentDashboardContent() {
             </div>
 
             {/* Curriculum Completion Status */}
-            {!studentLoading && hasCompletedCurriculum !== null && (
+            {hasCompletedCurriculum !== null && (
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Curriculum:</span>
                 <div className="flex items-center gap-2">
@@ -138,19 +151,19 @@ export default function StudentDashboardContent() {
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-col sm:flex-row">
               {graduationStatus.status === "NOT_SUBMITTED" && (
                 <>
                   <Button 
                     onClick={requestGraduation}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium flex-grow"
                     disabled={hasCompletedCurriculum === false || graduationLoading}
                   >
                     {graduationLoading ? "Submitting..." : "Request Graduation"}
                   </Button>
                   {hasCompletedCurriculum === false && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Complete all curriculum requirements to request graduation
+                    <p className="text-xs text-muted-foreground mt-1 sm:mt-0 sm:ml-2 flex-shrink-0">
+                      Complete curriculum to request
                     </p>
                   )}
                 </>
@@ -160,7 +173,7 @@ export default function StudentDashboardContent() {
                 <Button 
                   onClick={withdrawGraduationRequest}
                   variant="outline"
-                  className="border-red-300 text-red-600 hover:bg-red-50"
+                  className="border-red-300 text-red-600 hover:bg-red-50 flex-grow"
                   disabled={graduationLoading}
                 >
                   {graduationLoading && graduationStatus.status === "PENDING" ? "Withdrawing..." : "Withdraw Request"}
@@ -171,14 +184,14 @@ export default function StudentDashboardContent() {
                 <>
                   <Button 
                     onClick={requestGraduation}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium flex-grow"
                     disabled={hasCompletedCurriculum === false || graduationLoading}
                   >
                     {graduationLoading ? "Submitting..." : "Request Graduation Again"}
                   </Button>
                   {hasCompletedCurriculum === false && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Complete all curriculum requirements to request graduation
+                    <p className="text-xs text-muted-foreground mt-1 sm:mt-0 sm:ml-2 flex-shrink-0">
+                      Complete curriculum to request
                     </p>
                   )}
                 </>
@@ -217,11 +230,14 @@ export default function StudentDashboardContent() {
         </Card>
       </div>
 
-      {/* Student Info Dialog */}
-      <ViewStudentInfoDialog 
-        open={isStudentInfoDialogOpen}
-        onOpenChange={setIsStudentInfoDialogOpen}
-      />
+      {/* Student Info Dialog - Pass studentNumber */}
+      {studentProfile?.studentNumber && (
+        <ViewStudentInfoDialog 
+          open={isStudentInfoDialogOpen}
+          onOpenChange={setIsStudentInfoDialogOpen}
+          studentNumber={studentProfile.studentNumber} 
+        />
+      )}
     </div>
   )
 }

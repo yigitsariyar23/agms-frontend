@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { 
   Dialog, 
   DialogContent, 
@@ -9,10 +9,8 @@ import {
   DialogTitle 
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Separator } from "@/components/ui/separator"
 import { 
   User, 
   Mail, 
@@ -20,8 +18,6 @@ import {
   Building2, 
   UserCheck, 
   GraduationCap, 
-  FileText,
-  Upload,
   CheckCircle,
   Clock,
   ChevronDown,
@@ -29,62 +25,134 @@ import {
   BookOpen,
   Paperclip
 } from "lucide-react"
-import { useStudent } from "@/lib/contexts/student-context"
+import { getToken } from "@/lib/utils/jwt"
+import { StudentData } from "@/lib/types/student-data" 
+import { AdvisorDetails } from "@/lib/types/advisor-details"
 import FileUploadCard from "@/components/student/file-upload-card"
+import { AdvisorStudent } from "@/lib/contexts/advisor-context" 
 
 interface ViewStudentInfoDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  studentNumber: string 
+  initialStudentData?: AdvisorStudent 
 }
 
-export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDialogProps) {
-  const { studentProfile, studentData, loading, loadingDetailedInfo, hasCompletedCurriculum, getCurriculumStatus } = useStudent()
+function useStudentDetailsByNumber(studentNumber?: string, open?: boolean) {
+  const [studentData, setStudentData] = useState<StudentData | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!studentNumber || !open) {
+      setStudentData(null) 
+      return
+    }
+
+    const fetchStudentData = async () => {
+      setLoading(true)
+      try {
+        const token = getToken()
+        if (!token) {
+          setStudentData(null)
+          return
+        }
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentNumber}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          credentials: 'include',
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setStudentData(data)
+        } else {
+          console.error(`❌ Failed to fetch student data from /api/students/${studentNumber}:`, response.status, await response.text())
+          setStudentData(null) 
+        }
+
+      } catch (error) {
+        console.error(`❌ Error fetching student data from /api/students/${studentNumber}:`, error)
+        setStudentData(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStudentData()
+  }, [studentNumber, open])
+
+  return { studentData, loading }
+}
+
+export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initialStudentData }: ViewStudentInfoDialogProps) {
+  const { studentData, loading } = useStudentDetailsByNumber(studentNumber, open)
   const [showCourses, setShowCourses] = useState(false)
 
+  const hasCompletedCurriculum = studentData?.hasCompletedCurriculum ?? false
+
   const getAdvisorName = () => {
-    // Handle detailed advisor data from studentData
+    if (loading) return 'Loading...';
     if (studentData?.advisor) {
-      const firstName = studentData.advisor.firstName || ''
-      const lastName = studentData.advisor.lastName || ''
-      const fullName = `${firstName} ${lastName}`.trim()
+      const advisor = studentData.advisor as AdvisorDetails;
+      const fullName = `${advisor.firstName || ''} ${advisor.lastName || ''}`.trim()
       return fullName || 'Not assigned'
     }
-    
-    // Handle advisor from studentProfile (could be string or object)
-    if (studentProfile?.advisor) {
-      // If advisor is a string, return it directly
-      if (typeof studentProfile.advisor === 'string') {
-        return studentProfile.advisor
-      }
-      
-      // If advisor is an object, extract the name properties
-      if (typeof studentProfile.advisor === 'object' && studentProfile.advisor !== null) {
-        const advisorObj = studentProfile.advisor as any
-        const firstName = advisorObj.firstName || ''
-        const lastName = advisorObj.lastName || ''
-        const fullName = `${firstName} ${lastName}`.trim()
-        return fullName || 'Not assigned'
-      }
-    }
-    
     return 'Not assigned'
   }
 
   const getGPA = () => {
-    return studentData?.gpa || studentProfile?.gpa || 0
+    if (loading && !initialStudentData?.gpa) return 0;
+    return studentData?.gpa ?? initialStudentData?.gpa ?? 0
   }
 
   const getTotalCredits = () => {
-    return studentData?.totalCredit || studentProfile?.totalCredits || 0
+    if (loading && !(initialStudentData?.credits || initialStudentData?.totalCredits)) return 0;
+    return studentData?.totalCredit ?? initialStudentData?.credits ?? initialStudentData?.totalCredits ?? 0
   }
 
   const getCourses = () => {
+    if (loading && !studentData?.courses) return [];
     return studentData?.courses || []
   }
 
-  const getTotalCompletedCredits = () => {
-    const courses = getCourses()
-    return courses.reduce((total, course) => total + (course.credit || 0), 0)
+  const getCurriculumStatusText = (): "Completed" | "Not Completed" | "Loading..." => {
+    if (loading && studentData?.hasCompletedCurriculum === undefined) return 'Loading...';
+    if (studentData?.hasCompletedCurriculum !== undefined) {
+        return studentData.hasCompletedCurriculum ? "Completed" : "Not Completed";
+    }
+    return "Not Completed"; 
+}
+
+
+  const getStudentName = () => {
+    if (loading && !initialStudentData?.name) return 'Loading...';
+    if (initialStudentData?.name && !studentData) return initialStudentData.name;
+    if (studentData?.studentNumber) return studentData.studentNumber;
+    return initialStudentData?.name || studentNumber || 'Not available' 
+  }
+
+  const getStudentEmail = () => {
+    if (loading && !initialStudentData?.email) return 'Loading...';
+    return studentData?.email ?? initialStudentData?.email ?? 'Not available'
+  }
+
+  const getStudentNumberToDisplay = () => {
+    if (loading && !studentData?.studentNumber && !initialStudentData?.studentNumber) return 'Loading...';
+    return studentData?.studentNumber || initialStudentData?.studentNumber || studentNumber || 'Not available' 
+  }
+
+  const getDepartment = () => {
+    if (loading && !initialStudentData?.department) return 'Loading...';
+    return studentData?.department ?? initialStudentData?.department ?? 'Not available'
+  }
+
+  const getSemester = () => {
+    if (loading && !initialStudentData?.semester && !studentData?.semester) return null;
+    return studentData?.semester ?? initialStudentData?.semester ?? null
   }
 
   return (
@@ -93,21 +161,22 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
         <DialogHeader>
           <DialogTitle>Student Information</DialogTitle>
           <DialogDescription>
-            View detailed student profile, graduation status, and attached files.
+            Detailed student profile, graduation status, and attached files.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
-          {loading ? (
+          {loading && !(studentData || initialStudentData) ? (
             <div className="space-y-4">
               <Skeleton className="h-32 w-full" />
               <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
             </div>
-          ) : (
+          ) : studentData || initialStudentData ? (
             <>
               {/* Student Basic Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-xl font-semibold">Student Information</CardTitle>
+                  <CardTitle className="text-xl font-semibold">Student Profile</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center gap-3 pb-4 border-b">
@@ -116,7 +185,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-foreground">
-                        {studentProfile ? `${studentProfile.firstname} ${studentProfile.lastname}` : 'Not available'}
+                        {getStudentName()} 
                       </h3>
                       <p className="text-sm text-muted-foreground">Student</p>
                     </div>
@@ -128,7 +197,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                         <Hash className="w-5 h-5 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">Student Number</p>
-                          <p className="text-base font-medium">{studentProfile?.studentNumber || 'Not available'}</p>
+                          <p className="text-base font-medium">{getStudentNumberToDisplay()}</p>
                         </div>
                       </div>
                       
@@ -136,7 +205,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                         <Mail className="w-5 h-5 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">Email Address</p>
-                          <p className="text-base font-medium">{studentProfile?.email || 'Not available'}</p>
+                          <p className="text-base font-medium">{getStudentEmail()}</p>
                         </div>
                       </div>
                     </div>
@@ -146,7 +215,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                         <Building2 className="w-5 h-5 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">Department</p>
-                          <p className="text-base font-medium">{studentData?.department || studentProfile?.department || 'Not available'}</p>
+                          <p className="text-base font-medium">{getDepartment()}</p>
                         </div>
                       </div>
                       
@@ -163,111 +232,101 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
               </Card>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Graduation Status Card */}
+                {/* Academic Progress Card */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <GraduationCap className="w-5 h-5" />
-                      Graduation Status
+                      Academic Progress
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {loadingDetailedInfo ? (
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">GPA:</span>
+                        <span className="font-medium">{getGPA().toFixed(2)}</span>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">GPA:</span>
-                          <span className="font-medium">{getGPA().toFixed(2)}</span>
-                        </div>
-                                                
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Credits:</span>
-                          <span className="font-medium">{getTotalCredits()}</span>
-                        </div>
+                                              
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Credits:</span>
+                        <span className="font-medium">{getTotalCredits()}</span>
+                      </div>
 
-                        {studentData?.semester && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Semester:</span>
-                            <span className="font-medium">{studentData.semester}</span>
-                          </div>
-                        )}
+                      {getSemester() !== null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Semester:</span>
+                          <span className="font-medium">{getSemester()}</span>
+                        </div>
+                      )}
 
+                      
+                      {/* Clickable Curriculum Status */}
+                      <div 
+                        className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors"
+                        onClick={() => setShowCourses(!showCourses)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Curriculum:</span>
+                          {showCourses ? (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </div>
                         
-                        {/* Clickable Curriculum Status */}
-                        <div 
-                          className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors"
-                          onClick={() => setShowCourses(!showCourses)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">Curriculum:</span>
-                            {showCourses ? (
-                              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            {hasCompletedCurriculum ? (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <Clock className="w-4 h-4 text-yellow-500" />
-                            )}
-                            <Badge variant={hasCompletedCurriculum ? "default" : "secondary"}>
-                              {getCurriculumStatus()}
-                            </Badge>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          {getCurriculumStatusText() === 'Loading...' ? (
+                            <Clock className="w-4 h-4 text-muted-foreground animate-spin" />
+                          ) : hasCompletedCurriculum ? (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Clock className="w-4 h-4 text-yellow-500" />
+                          )}
+                          <Badge variant={getCurriculumStatusText() === 'Loading...' ? "outline" : hasCompletedCurriculum ? "default" : "secondary"}>
+                            {getCurriculumStatusText()}
+                          </Badge>
                         </div>
-
-                        {/* Expandable Courses List */}
-                        {showCourses && (
-                          <div className="mt-3 p-3 bg-muted/30 rounded-md">
-                            <div className="flex items-center gap-2 mb-3">
-                              <BookOpen className="w-4 h-4 text-primary" />
-                              <span className="text-sm font-medium">Courses Taken</span>
-                            </div>
-                            {loadingDetailedInfo ? (
-                              <div className="space-y-2">
-                                <Skeleton className="h-8 w-full" />
-                                <Skeleton className="h-8 w-full" />
-                                <Skeleton className="h-8 w-full" />
-                              </div>
-                            ) : getCourses().length === 0 ? (
-                              <div className="text-center py-4">
-                                <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                                <p className="text-sm text-muted-foreground">No courses found</p>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="space-y-2 max-h-40 overflow-y-auto">
-                                  {getCourses().map((course, index) => (
-                                    <div key={index} className="flex items-center justify-between text-xs p-2 bg-background rounded border">
-                                      <div className="flex-1">
-                                        <div className="font-medium">{course.code || 'N/A'}</div>
-                                        <div className="text-muted-foreground truncate">{course.name || 'Course name not available'}</div>
-                                      </div>
-                                      <div className="text-right ml-2">
-                                        <div className="font-medium">{course.grade || 'N/A'}</div>
-                                        <div className="text-muted-foreground">{course.credit || 0} credits</div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        )}
                       </div>
-                    )}
+
+                      {/* Expandable Courses List */}
+                      {showCourses && (
+                        <div className="mt-3 p-3 bg-muted/30 rounded-md">
+                          <div className="flex items-center gap-2 mb-3">
+                            <BookOpen className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">Courses Taken</span>
+                          </div>
+                          { getCourses().length === 0 ? (
+                            <div className="text-center py-4">
+                              <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">
+                                {loading && !studentData?.courses ? 'Loading courses...' : 'No courses found or not loaded yet.'}
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {getCourses().map((course, index) => (
+                                  <div key={index} className="flex items-center justify-between text-xs p-2 bg-background rounded border">
+                                    <div className="flex-1">
+                                      <div className="font-medium">{course.code || 'N/A'}</div>
+                                      <div className="text-muted-foreground truncate" title={course.name || 'Course name not available'}>{course.name || 'Course name not available'}</div>
+                                    </div>
+                                    <div className="text-right ml-2">
+                                      <div className="font-medium">{course.grade || 'N/A'}</div>
+                                      <div className="text-muted-foreground">{course.credit || 0} credits</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* Attached Files Card - Replaced with FileUploadCard */}
+                {/* Attached Files Card */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -276,11 +335,20 @@ export function ViewStudentInfoDialog({ open, onOpenChange }: ViewStudentInfoDia
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <FileUploadCard />
+                    <FileUploadCard /> 
                   </CardContent>
                 </Card>
               </div>
             </>
+          ) : (
+             <div className="text-center py-10">
+                <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-lg font-medium">Student Data Not Available</p>
+                <p className="text-sm text-muted-foreground">
+                  Could not load student information. The student number might be invalid,
+                  data is not yet available, or there was an error.
+                </p>
+             </div>
           )}
         </div>
       </DialogContent>
