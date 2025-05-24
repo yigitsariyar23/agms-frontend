@@ -5,7 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/lib/contexts/auth-context"
 import { UserProvider } from "@/lib/contexts/user-context"
 import { StudentProvider } from "@/lib/contexts/student-context"
-import Footer from "@/components/shared/footer"
+import Footer from "@/components/shared/footer/footer"
 
 const inter = Inter({ subsets: ["latin"] })
 
