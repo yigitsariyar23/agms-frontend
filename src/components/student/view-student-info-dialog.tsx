@@ -243,7 +243,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {loadingDetailedInfo ? (
+                    {loading && !studentData ? (
                       <div className="space-y-2">
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-3/4" />
@@ -279,12 +279,6 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                               </>
                             )}
                           </span>
-
-
-
-
-
-
                         </div>
                         {/* Credits Line with Status */}
                         <div className="flex items-center justify-between">
@@ -307,11 +301,6 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                               </>
                             )}
                           </span>
-
-
-
-
-
                         </div>
 
                         {/* Clickable Curriculum Status */}
@@ -335,46 +324,47 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                               <Clock className="w-4 h-4 text-yellow-500" />
                             )}
                             <Badge variant={hasCompletedCurriculum ? "default" : "secondary"}>
-                              {getCurriculumStatus()}
+                              {getCurriculumStatusText()}
                             </Badge>
                           </div>
                         </div>
 
-                      {/* Expandable Courses List */}
-                      {showCourses && (
-                        <div className="mt-3 p-3 bg-muted/30 rounded-md">
-                          <div className="flex items-center gap-2 mb-3">
-                            <BookOpen className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-medium">Courses Taken</span>
-                          </div>
-                          { getCourses().length === 0 ? (
-                            <div className="text-center py-4">
-                              <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                              <p className="text-sm text-muted-foreground">
-                                {loading && !studentData?.courses ? 'Loading courses...' : 'No courses found or not loaded yet.'}
-                              </p>
+                        {/* Expandable Courses List */}
+                        {showCourses && (
+                          <div className="mt-3 p-3 bg-muted/30 rounded-md">
+                            <div className="flex items-center gap-2 mb-3">
+                              <BookOpen className="w-4 h-4 text-primary" />
+                              <span className="text-sm font-medium">Courses Taken</span>
                             </div>
-                          ) : (
-                            <>
-                              <div className="space-y-2 max-h-40 overflow-y-auto">
-                                {getCourses().map((course, index) => (
-                                  <div key={index} className="flex items-center justify-between text-xs p-2 bg-background rounded border">
-                                    <div className="flex-1">
-                                      <div className="font-medium">{course.code || 'N/A'}</div>
-                                      <div className="text-muted-foreground truncate" title={course.name || 'Course name not available'}>{course.name || 'Course name not available'}</div>
-                                    </div>
-                                    <div className="text-right ml-2">
-                                      <div className="font-medium">{course.grade || 'N/A'}</div>
-                                      <div className="text-muted-foreground">{course.credit || 0} credits</div>
-                                    </div>
-                                  </div>
-                                ))}
+                            { getCourses().length === 0 ? (
+                              <div className="text-center py-4">
+                                <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                                <p className="text-sm text-muted-foreground">
+                                  {loading && !studentData?.courses ? 'Loading courses...' : 'No courses found or not loaded yet.'}
+                                </p>
                               </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                            ) : (
+                              <>
+                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                  {getCourses().map((course, index) => (
+                                    <div key={index} className="flex items-center justify-between text-xs p-2 bg-background rounded border">
+                                      <div className="flex-1">
+                                        <div className="font-medium">{course.code || 'N/A'}</div>
+                                        <div className="text-muted-foreground truncate" title={course.name || 'Course name not available'}>{course.name || 'Course name not available'}</div>
+                                      </div>
+                                      <div className="text-right ml-2">
+                                        <div className="font-medium">{course.grade || 'N/A'}</div>
+                                        <div className="text-muted-foreground">{course.credit || 0} credits</div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
