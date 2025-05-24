@@ -1,29 +1,30 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { 
-  User, 
-  Mail, 
-  Hash, 
-  Building2, 
-  UserCheck, 
-  GraduationCap, 
+import {
+  User,
+  Mail,
+  Hash,
+  Building2,
+  UserCheck,
+  GraduationCap,
   CheckCircle,
   Clock,
   ChevronDown,
   ChevronRight,
   BookOpen,
-  Paperclip
+  Paperclip,
+  XCircle
 } from "lucide-react"
 import { getToken } from "@/lib/utils/jwt"
 import { StudentData } from "@/lib/types/student-data" 
@@ -164,6 +165,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
             Detailed student profile, graduation status, and attached files.
           </DialogDescription>
         </DialogHeader>
+
         <div className="space-y-6">
           {loading && !(studentData || initialStudentData) ? (
             <div className="space-y-4">
@@ -190,7 +192,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                       <p className="text-sm text-muted-foreground">Student</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
@@ -200,7 +202,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                           <p className="text-base font-medium">{getStudentNumberToDisplay()}</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start gap-3">
                         <Mail className="w-5 h-5 text-muted-foreground mt-0.5" />
                         <div>
@@ -209,7 +211,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
                         <Building2 className="w-5 h-5 text-muted-foreground mt-0.5" />
@@ -218,7 +220,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                           <p className="text-base font-medium">{getDepartment()}</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start gap-3">
                         <UserCheck className="w-5 h-5 text-muted-foreground mt-0.5" />
                         <div>
@@ -241,52 +243,102 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">GPA:</span>
-                        <span className="font-medium">{getGPA().toFixed(2)}</span>
+                    {loadingDetailedInfo ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
                       </div>
-                                              
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Credits:</span>
-                        <span className="font-medium">{getTotalCredits()}</span>
-                      </div>
-
-                      {getSemester() !== null && (
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Move Semester to Top */}
+                        {studentData?.semester && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Semester:</span>
+                            <span className="font-medium">{studentData.semester}</span>
+                          </div>
+                        )}
+                        {/* GPA Line with Status */}
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Semester:</span>
-                          <span className="font-medium">{getSemester()}</span>
-                        </div>
-                      )}
+                          <span className="text-sm text-muted-foreground">GPA:</span>
+                          <span className="font-medium flex items-center gap-2">
+                            {getGPA().toFixed(2)}
+                            {getGPA() < 2.0 ? (
+                              <>
+                                <XCircle className="w-4 h-4 text-red-500" />
+                                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-900 font-semibold">
+                                  GPA is not enough
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-900 font-semibold">
+                                  GPA is sufficient
+                                </span>
+                              </>
+                            )}
+                          </span>
 
-                      
-                      {/* Clickable Curriculum Status */}
-                      <div 
-                        className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors"
-                        onClick={() => setShowCourses(!showCourses)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Curriculum:</span>
-                          {showCourses ? (
-                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                          )}
+
+
+
+
+
                         </div>
-                        
-                        <div className="flex items-center gap-2">
-                          {getCurriculumStatusText() === 'Loading...' ? (
-                            <Clock className="w-4 h-4 text-muted-foreground animate-spin" />
-                          ) : hasCompletedCurriculum ? (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-yellow-500" />
-                          )}
-                          <Badge variant={getCurriculumStatusText() === 'Loading...' ? "outline" : hasCompletedCurriculum ? "default" : "secondary"}>
-                            {getCurriculumStatusText()}
-                          </Badge>
+                        {/* Credits Line with Status */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Credits:</span>
+                          <span className="font-medium flex items-center gap-2">
+                            {getTotalCredits()}
+                            {getTotalCredits() < 23 ? (
+                              <>
+                                <XCircle className="w-4 h-4 text-red-500" />
+                                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-900 font-semibold">
+                                  Credits are not enough
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-900 font-semibold">
+                                  Credits are sufficient
+                                </span>
+                              </>
+                            )}
+                          </span>
+
+
+
+
+
                         </div>
-                      </div>
+
+                        {/* Clickable Curriculum Status */}
+                        <div
+                          className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors"
+                          onClick={() => setShowCourses(!showCourses)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Curriculum:</span>
+                            {showCourses ? (
+                              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {hasCompletedCurriculum ? (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Clock className="w-4 h-4 text-yellow-500" />
+                            )}
+                            <Badge variant={hasCompletedCurriculum ? "default" : "secondary"}>
+                              {getCurriculumStatus()}
+                            </Badge>
+                          </div>
+                        </div>
 
                       {/* Expandable Courses List */}
                       {showCourses && (
