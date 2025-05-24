@@ -93,7 +93,8 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
   const { studentData, loading } = useStudentDetailsByNumber(studentNumber, open)
   const [showCourses, setShowCourses] = useState(false)
 
-  const hasCompletedCurriculum = studentData?.hasCompletedCurriculum ?? false
+  console.log(studentData)
+  const hasCompletedCurriculum = studentData?.curriculumCompleted ?? false
 
   const getAdvisorName = () => {
     if (loading) return 'Loading...';
@@ -121,9 +122,9 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
   }
 
   const getCurriculumStatusText = (): "Completed" | "Not Completed" | "Loading..." => {
-    if (loading && studentData?.hasCompletedCurriculum === undefined) return 'Loading...';
-    if (studentData?.hasCompletedCurriculum !== undefined) {
-        return studentData.hasCompletedCurriculum ? "Completed" : "Not Completed";
+    if (loading && studentData?.curriculumCompleted === undefined) return 'Loading...';
+    if (studentData?.curriculumCompleted !== undefined) {
+        return studentData.curriculumCompleted ? "Completed" : "Not Completed";
     }
     return "Not Completed"; 
 }
@@ -132,7 +133,7 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
   const getStudentName = () => {
     if (loading && !initialStudentData?.name) return 'Loading...';
     if (initialStudentData?.name && !studentData) return initialStudentData.name;
-    if (studentData?.studentNumber) return studentData.studentNumber;
+    if (studentData?.firstName && studentData?.lastName) return `${studentData.firstName} ${studentData.lastName}`;
     return initialStudentData?.name || studentNumber || 'Not available' 
   }
 

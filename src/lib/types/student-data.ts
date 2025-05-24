@@ -11,9 +11,11 @@ export interface Course {
 
 export interface StudentData {
     studentNumber?: string;
+    firstName?: string;
+    lastName?: string;
     gpa?: number;
     totalCredit?: number;
-    hasCompletedCurriculum?: boolean;
+    curriculumCompleted?: boolean;
     semester?: number;
     email?: string;
     department?: string;
