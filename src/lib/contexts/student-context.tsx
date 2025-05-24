@@ -5,12 +5,20 @@ import { User } from '../types/user';
 import { useUser } from './user-context';
 import { getToken } from '../utils/jwt';
 import { StudentData } from '../types/student-data';
+import { GraduationRequestStatus } from '../types/graduation-status';
+
+interface DetailedGraduationStatusData {
+  status: GraduationRequestStatus;
+  message?: string;
+}
 
 interface StudentContextType {
   studentProfile: User | null;
   studentData: StudentData | null;
+  initialGraduationStatusData: DetailedGraduationStatusData | null;
   loading: boolean;
   loadingDetailedInfo: boolean;
+  loadingInitialGraduationStatus: boolean;
   fetchStudentProfile: () => Promise<void>;
   hasCompletedCurriculum: boolean | null;
   getCurriculumStatus: () => "Completed" | "Not Completed";
@@ -21,8 +29,10 @@ const StudentContext = createContext<StudentContextType | undefined>(undefined);
 export function StudentProvider({ children }: { children: ReactNode }) {
   const [studentProfile, setStudentProfile] = useState<User | null>(null);
   const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [initialGraduationStatusData, setInitialGraduationStatusData] = useState<DetailedGraduationStatusData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingDetailedInfo, setLoadingDetailedInfo] = useState<boolean>(false);
+  const [loadingInitialGraduationStatus, setLoadingInitialGraduationStatus] = useState<boolean>(false);
   const { user } = useUser();
 
   const fetchDetailedStudentData = async (studentNumber: string) => {
@@ -57,36 +67,90 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchStudentGraduationStatus = async (studentNumber: string) => {
+    if (!studentNumber) return;
+    setLoadingInitialGraduationStatus(true);
+    setInitialGraduationStatusData(null);
+    try {
+      const token = getToken();
+      if (!token) {
+        setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Auth token missing for grad status" });
+        return;
+      }
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/student/${studentNumber}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.status) {
+          setInitialGraduationStatusData({
+            status: data.status as GraduationRequestStatus,
+            message: data.message || "Graduation status loaded.",
+          });
+        } else {
+          setInitialGraduationStatusData({
+            status: "NOT_SUBMITTED",
+            message: response.status === 404 ? "No graduation submission found." : "Could not determine graduation status."
+          });
+        }
+      } else {
+        let errorMessage = response.statusText;
+        try {
+          const errorBody = await response.json();
+          errorMessage = errorBody.message || errorBody.error || errorMessage;
+        } catch (e) { /* Ignore if error body isn't json */ }
+        setInitialGraduationStatusData({
+          status: "NOT_SUBMITTED",
+          message: `Failed to load graduation status: ${errorMessage}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching initial graduation status:', error);
+      setInitialGraduationStatusData({
+        status: "NOT_SUBMITTED",
+        message: "Client error fetching graduation status.",
+      });
+    } finally {
+      setLoadingInitialGraduationStatus(false);
+    }
+  };
+
   const fetchStudentProfile = async (): Promise<void> => {
     if (!user) {
       setStudentProfile(null);
       setStudentData(null);
+      setInitialGraduationStatusData(null);
       return;
     }
     
     const userRole = user.role;
     
-    // Only fetch student data if user is a student
     if (userRole !== 'STUDENT' && userRole !== 'ROLE_STUDENT') {
       setStudentProfile(null);
       setStudentData(null);
+      setInitialGraduationStatusData(null);
       return;
     }
     
     setLoading(true);
-    setStudentData(null); // Reset detailed data on new profile fetch
+    setStudentData(null);
+    setInitialGraduationStatusData(null);
     
     try {
       const token = getToken();
       if (!token) {
-        setStudentProfile(user); // Use basic user info as fallback
+        setStudentProfile(user);
         setLoading(false);
+        setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Auth token missing for profile." });
         return;
       }
       
       console.log('Fetching student academic data from: /api/students/profile');
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/profile`, {
+      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/profile`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -95,31 +159,36 @@ export function StudentProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
       });
 
-      if (response.ok) {
-        const studentAcademicData: User = await response.json();
-        // Merge basic user info from user context with student academic data
+      if (profileResponse.ok) {
+        const studentAcademicData: User = await profileResponse.json();
         const mergedProfile: User = {
-          ...user, // Basic info from user context (userId, email, firstname, lastname, role)
-          ...studentAcademicData, // Academic info (department, advisor, gpa, etc.)
+          ...user,
+          ...studentAcademicData,
         };
         setStudentProfile(mergedProfile);
-        // Fetch detailed student data if student number is available
+
         if (mergedProfile.studentNumber) {
           fetchDetailedStudentData(mergedProfile.studentNumber);
+          fetchStudentGraduationStatus(mergedProfile.studentNumber);
+        } else {
+          setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Student number not found in profile." });
         }
-      } else if (response.status === 401) {
-        setStudentProfile(user); // Use basic user info as fallback
+      } else if (profileResponse.status === 401) {
+        setStudentProfile(user);
+        setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Unauthorized to fetch profile." });
       } else {
-        const errorText = await response.text();
+        const errorText = await profileResponse.text();
         console.error('Failed to fetch student academic data:', errorText);
-        setStudentProfile(user); // Use basic user info as fallback
+        setStudentProfile(user);
+        setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: `Profile fetch error: ${errorText.substring(0,100)}` });
       }
     } catch (error) {
       console.error('Error fetching student academic data:', error);
-      setStudentProfile(user); // Use basic user info as fallback
+      setStudentProfile(user);
+      setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Client error fetching profile." });
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -132,12 +201,10 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const getCurriculumStatus = (): "Completed" | "Not Completed" => {
-    // Check if hasCompletedCurriculum is available from backend
     if (studentData?.hasCompletedCurriculum !== undefined) {
       return studentData.hasCompletedCurriculum ? "Completed" : "Not Completed";
     }
     
-    // Fallback to calculating based on credits if backend value is not available
     const totalCredits = studentData?.totalCredit || studentProfile?.totalCredits;
     const creditsCompleted = studentProfile?.creditsCompleted;
     
@@ -150,8 +217,10 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const value = {
     studentProfile,
     studentData,
+    initialGraduationStatusData,
     loading,
     loadingDetailedInfo,
+    loadingInitialGraduationStatus,
     fetchStudentProfile,
     hasCompletedCurriculum: studentData?.hasCompletedCurriculum ?? null,
     getCurriculumStatus,
