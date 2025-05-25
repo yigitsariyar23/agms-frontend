@@ -80,12 +80,16 @@ const Footer = () => {
                                 </p>
                                 <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-800">Developers</h2>
                                 <ul className="list-disc list-inside space-y-1 text-gray-800">
+                                    <li>Yiğit Sarıyar - Project Manager</li>
+                                    <li>Ahmet Kerem Şaylı - Frontend Development</li>
+                                    <li>Meric Kelemeden - Quality Assurance and Backend Development</li>
                                     <li>Nedret Çiftçi – Frontend Development</li>
-                                    <li>[Developer Name] – Backend & Database Integration</li>
-                                    <li>[Developer Name] – UX/UI Design</li>
+                                    <li>Necla Akyol – Quality Assurance and Backend Development</li>
+                                    <li>Oğulcan Küçükbıyıklar - Devops and Backend Development</li>
+                                    <li>Kaan Cesur - Frontend Development</li>
                                 </ul>
                                 <p className="mt-8 text-sm text-gray-500">
-                                    This project is a part of the Graduation Project course at Izmir Institute of Technology.
+                                    This project is a part of the "Project Management" and "Software Engineering" courses at Izmir Institute of Technology.
                                 </p>
                             </div>
                         </div>
