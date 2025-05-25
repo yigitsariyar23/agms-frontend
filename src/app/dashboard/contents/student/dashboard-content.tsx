@@ -240,15 +240,10 @@ export default function StudentDashboardContent() {
                       }
                     }}
                     className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium flex-grow"
-                    disabled={hasCompletedCurriculum === false || graduationLoading || submissionLoading}
+                    disabled={graduationLoading || submissionLoading}
                   >
                     {requestButtonText()}
                   </Button>
-                  {hasCompletedCurriculum === false && (
-                    <p className="text-xs text-muted-foreground mt-1 sm:mt-0 sm:ml-2 flex-shrink-0">
-                      Complete curriculum to request
-                    </p>
-                  )}
                 </>
               )}
             </div>
