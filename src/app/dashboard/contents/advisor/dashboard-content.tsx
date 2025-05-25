@@ -132,7 +132,7 @@ export default function AdvisorDashboard() {
       case "REJECTED_BY_ADVISOR":
       case "REJECTED_BY_DEPT":
       case "REJECTED_BY_DEAN":
-      case "FINAL_REJECTED":
+      case "STUDENT_AFFAIRS_REJECTED":
         return "text-red-600";
       case "PENDING":
         return "text-yellow-600";
