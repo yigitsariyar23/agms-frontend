@@ -207,8 +207,8 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const getCurriculumStatus = (): "Completed" | "Not Completed" => {
-    if (studentData?.hasCompletedCurriculum !== undefined) {
-      return studentData.hasCompletedCurriculum ? "Completed" : "Not Completed";
+    if (studentData?.curriculumCompleted !== undefined) {
+      return studentData.curriculumCompleted ? "Completed" : "Not Completed";
     }
     
     const totalCredits = studentData?.totalCredit || studentProfile?.totalCredits;
@@ -228,7 +228,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     loadingDetailedInfo,
     loadingInitialGraduationStatus,
     fetchStudentProfile,
-    hasCompletedCurriculum: studentData?.hasCompletedCurriculum ?? null,
+    hasCompletedCurriculum: studentData?.curriculumCompleted ?? null,
     getCurriculumStatus,
   };
 

@@ -6,6 +6,9 @@ import { AuthProvider } from "@/lib/contexts/auth-context"
 import { UserProvider } from "@/lib/contexts/user-context"
 import { StudentProvider } from "@/lib/contexts/student-context"
 import { AdvisorProvider } from "@/lib/contexts/advisor-context"
+import { DepartmentSecretaryProvider } from "@/lib/contexts/department-secretary-context"
+import { DeansOfficeProvider } from "@/lib/contexts/deans-office-context"
+import { StudentAffairsProvider } from "@/lib/contexts/student-affairs-context"
 import Footer from "@/components/shared/footer/footer"
 import { Toaster } from "sonner"
 
@@ -35,13 +38,19 @@ export default function RootLayout({
           <UserProvider>
             <StudentProvider>
               <AdvisorProvider>
-                <div className="min-h-screen flex flex-col">
-                  <main className="flex-grow">
-                    {children}
-                  </main>
-                  <Footer />
-                </div>
-                <Toaster />
+                <DepartmentSecretaryProvider>
+                  <DeansOfficeProvider>
+                    <StudentAffairsProvider>
+                      <div className="min-h-screen flex flex-col">
+                        <main className="flex-grow">
+                          {children}
+                        </main>
+                        <Footer />
+                      </div>
+                      <Toaster />
+                    </StudentAffairsProvider>
+                  </DeansOfficeProvider>
+                </DepartmentSecretaryProvider>
               </AdvisorProvider>
             </StudentProvider>
           </UserProvider>

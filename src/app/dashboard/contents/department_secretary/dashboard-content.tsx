@@ -1,289 +1,440 @@
-import { Button } from "@/components/ui/button"
-import { useEffect, useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { toast } from "sonner"
-import { ViewStudentInfo, StudentInfoProps } from "@/components/student/view-student-info-dialog"
+"use client";
 
-interface Student {
-  number: string
-  name: string
-  status: "Approved" | "Declined" | "Pending"
-  email: string
-  department: string
-  advisor: string
-  gpa?: number
-  curriculum?: string
-  credits?: number
-  files?: string[]
-  advisorComment?: string
-  declineReason?: string
-  reviewed?: boolean
-  secretaryComment?: string
-  deanComment?: string
-  graduationStatus?: string
-  graduationComment?: string
-}
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+// Assuming the context import is incorrect and needs to be corrected or removed
+import { useDepartmentSecretary } from "@/lib/contexts/department-secretary-context";
+import { SubmissionDetails } from "@/lib/types/submission-details";
+import { useUser } from "@/lib/contexts/user-context";
+import { ViewStudentInfoDialog } from "@/components/student/view-student-info-dialog";
+import { CheckCircle, XCircle } from "lucide-react";
 
-// Define a type for Advisor Status, replace 'any' with a proper structure later
-interface AdvisorStatus {
-  name: string;
-  status: string; 
-  // Add other relevant fields as needed
+interface ModalState {
+  type: "accept" | "decline" | "info" | "finalize";
+  student?: SubmissionDetails;
 }
 
 export default function DepartmentSecretaryDashboard() {
-  const [students, setStudents] = useState<Student[]>([])
-  const [advisorStatuses, setAdvisorStatuses] = useState<AdvisorStatus[]>([])
-  const [search, setSearch] = useState("")
-  const [modal, setModal] = useState<null | {
-    type: "decline" | "info" | "finalize",
-    studentIdx?: number
-  }>(null)
-  const [declineReason, setDeclineReason] = useState("")
-  const [isFinalized, setIsFinalized] = useState(false)
-  const [sortBy, setSortBy] = useState<keyof Student | null>(null)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const { user } = useUser();
+  const { 
+    students, 
+    loading, 
+    approveStudent, 
+    declineStudent, 
+    finalizeList, 
+    isListFinalized 
+  } = useDepartmentSecretary();
+  
+  const [search, setSearch] = useState("");
+  const [modal, setModal] = useState<ModalState | null>(null);
+  const [declineReason, setDeclineReason] = useState("");
+  const [sortBy, setSortBy] = useState<keyof SubmissionDetails | null>("studentNumber");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [gpaLoadingStates, setGpaLoadingStates] = useState<Record<string, boolean>>({});
 
-  // TODO: Fetch actual student data from the backend
-  useEffect(() => {
-    const fetchStudentsForSecretary = async () => {
-      try {
-        // const response = await fetch("/api/department-secretary/students"); // Replace with your actual API endpoint
-        // const data = await response.json();
-        // setStudents(data);
-        toast.info("Student data for secretary would be fetched here.");
-      } catch (error) {
-        console.error("Failed to fetch students for secretary:", error);
-        toast.error("Failed to load student data for secretary.");
-      }
-    };
-    fetchStudentsForSecretary();
-  }, []);
-
-  // TODO: Fetch actual advisor list statuses from the backend
-  useEffect(() => {
-    const fetchAdvisorStatuses = async () => {
-      try {
-        // const response = await fetch("/api/department-secretary/advisor-statuses"); // Replace with your actual API endpoint
-        // const data = await response.json();
-        // setAdvisorStatuses(data);
-        toast.info("Advisor list statuses would be fetched here.");
-      } catch (error) {
-        console.error("Failed to fetch advisor statuses:", error);
-        toast.error("Failed to load advisor statuses.");
-      }
-    };
-    fetchAdvisorStatuses();
-  }, []);
-
-  const handleSort = (field: keyof Student) => {
+  const handleSort = (field: keyof SubmissionDetails) => {
     if (sortBy === field) {
-      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"))
+      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
     } else {
-      setSortBy(field)
-      setSortDirection("asc")
+      setSortBy(field);
+      setSortDirection("asc");
     }
-  }
+  };
 
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.number.includes(search)
-  )
+  // Filter students based on search
+  const filteredStudents = students.filter(
+    (student) =>
+      (student.studentName?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (student.studentNumber || "").includes(search)
+  );
 
+  // Sort students based on current sort field and direction
   const sortedStudents = [...filteredStudents].sort((a, b) => {
-    if (!sortBy) return 0
-    const aVal = a[sortBy]
-    const bVal = b[sortBy]
+    if (!sortBy) return 0;
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
 
     if (typeof aVal === "string" && typeof bVal === "string") {
       return sortDirection === "asc"
         ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal)
+        : bVal.localeCompare(aVal);
     }
     if (typeof aVal === "number" && typeof bVal === "number") {
-      return sortDirection === "asc" ? aVal - bVal : bVal - aVal
+      return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
     }
-    return 0
-  })
+    // Handle cases where one or both values might be undefined/null
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return sortDirection === "asc" ? -1 : 1;
+    if (bVal == null) return sortDirection === "asc" ? 1 : -1;
+    
+    return 0;
+  });
 
-  const handleApprove = (idx: number) => {
-    setStudents(students => students.map((s, i) =>
-      i === idx ? { ...s, status: "Approved", reviewed: true, secretaryComment: undefined } : s
-    ))
-    toast.success("Student approved.")
-  }
-
-  const handleDecline = () => {
-    if (modal && modal.studentIdx !== undefined) {
-      setStudents(students => students.map((s, i) =>
-        i === modal.studentIdx ? { ...s, status: "Declined", reviewed: true, secretaryComment: declineReason } : s
-      ))
-      setDeclineReason("")
-      setModal(null)
-      toast.success("Student declined.")
+  const handleAccept = async () => {
+    if (modal && modal.student) {
+      await approveStudent(modal.student.submissionId);
+      toast.success("Student approved successfully");
+      setModal(null);
     }
-  }
+  };
+
+  const handleDecline = async () => {
+    if (modal && modal.student && declineReason.trim()) {
+      await declineStudent(modal.student.submissionId, declineReason);
+      toast.success("Student declined");
+      setDeclineReason("");
+      setModal(null);
+    }
+  };
 
   const handleFinalize = () => {
-    const hasUnreviewedStudents = students.some(s => !s.reviewed)
-    if (hasUnreviewedStudents) {
-      toast.error("All students must be approved or declined before finalizing")
-      return
+    const hasPendingStudents = students.some((s) => s.status === "APPROVED_BY_ADVISOR");
+    if (hasPendingStudents) {
+      toast.error(
+        "All students must be either approved or declined before finalizing"
+      );
+      return;
     }
-    setModal({ type: "finalize" })
-  }
+    setModal({ type: "finalize" });
+  };
 
-  const confirmFinalize = () => {
-    setIsFinalized(true)
-    toast.success("List has been finalized and sent to dean's office")
-    setModal(null)
+  const confirmFinalize = async () => {
+    await finalizeList();
+    toast.success("List has been finalized and sent to dean's office");
+    setModal(null);
+  };
+
+  const getStatusColor = (status: SubmissionDetails['status']) => {
+    switch (status) {
+      case "APPROVED_BY_ADVISOR":
+      case "APPROVED_BY_DEPT":
+      case "APPROVED_BY_DEAN":
+      case "FINAL_APPROVED":
+        return "text-green-600";
+      case "REJECTED_BY_ADVISOR":
+      case "REJECTED_BY_DEPT":
+      case "REJECTED_BY_DEAN":
+      case "FINAL_REJECTED":
+        return "text-red-600";
+      case "PENDING":
+        return "text-yellow-600";
+      case "NOT_REQUESTED":
+        return "text-gray-400";
+      default:
+        return "text-gray-600";
+    }
+  };
+
+  const refreshGPA = async (student: SubmissionDetails) => {
+    setGpaLoadingStates(prev => ({ ...prev, [student.submissionId]: true }));
+    
+    try {
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      if (!token) {
+        console.error('No token available');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/${student.studentNumber}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const detailedData = await response.json();
+        // Update the specific student's GPA in the context
+        // Note: This would ideally be done through the context, but for simplicity we'll trigger a refetch
+        window.location.reload(); // Temporary solution - ideally we'd update the context state
+      } else {
+        console.error('Failed to refresh GPA data');
+      }
+    } catch (error) {
+      console.error('Error refreshing GPA data:', error);
+    } finally {
+      setGpaLoadingStates(prev => ({ ...prev, [student.submissionId]: false }));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="h-10 bg-gray-200 rounded w-full mb-6"></div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-2xl font-bold mb-6">Department Secretary Dashboard</h1>
-      {/* Advisor List Status Table */}
-      <div className="bg-white border rounded p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Advisor List Status</h2>
-        <table className="min-w-full">
-          <thead>
-            <tr>
-              <th className="text-left py-2">Advisor Name</th>
-              <th className="text-left py-2">List Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {advisorStatuses.map((advisor, idx) => (
-              <tr key={advisor.name}>
-                <td className="py-2">{advisor.name}</td>
-                <td className="py-2">{advisor.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Button
-          variant="default"
-          className="mt-4"
-          onClick={handleFinalize}
-          disabled={isFinalized}
-        >
-          Finalize Graduation List
-        </Button>
-      </div>
-      {isFinalized && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          List has been finalized and sent to dean's office
-        </div>
-      )}
-      <Input
-        type="text"
-        placeholder="Search students..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="w-full mb-6"
-      />
-      <table className="min-w-full bg-white border rounded mb-6">
-        <thead>
-          <tr>
-            <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("number")}>
-              Student Number {sortBy === "number" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
-            </th>
-            <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("name")}>
-              Student Name {sortBy === "name" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
-            </th>
-            <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("advisor")}>
-              Advisor {sortBy === "advisor" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
-            </th>
-            <th className="px-4 py-2 text-left cursor-pointer" onClick={() => handleSort("status")}>
-              Status {sortBy === "status" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
-            </th>
-            <th className="px-4 py-2 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedStudents.map((student, idx) => (
-            <tr key={student.number} className="border-t">
-              <td className="px-4 py-2">{student.number}</td>
-              <td className="px-4 py-2">{student.name}</td>
-              <td className="px-4 py-2">{student.advisor}</td>
-              <td className="px-4 py-2">{student.status}</td>
-              <td className="px-4 py-2 flex gap-2">
-                <Button variant="default" onClick={() => handleApprove(idx)} disabled={student.status === "Approved"}>Approve</Button>
-                <Button variant="destructive" onClick={() => setModal({ type: "decline", studentIdx: idx })} disabled={student.status === "Declined"}>Decline</Button>
-                <Button variant="default" onClick={() => setModal({ type: "info", studentIdx: idx })}>View Info</Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Decline Modal */}
-      <Dialog open={!!modal && modal.type === "decline"} onOpenChange={open => !open && setModal(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Decline Student</DialogTitle>
-            <DialogDescription>Please provide a reason for declining this student.</DialogDescription>
-          </DialogHeader>
-          <div className="mb-4">
-            <Label htmlFor="decline-reason">Reason</Label>
-            <Textarea
-              id="decline-reason"
-              value={declineReason}
-              onChange={e => setDeclineReason(e.target.value)}
-              className="mt-2"
-              placeholder="Enter reason..."
-            />
+    <div className="min-h-screen bg-gray-50">
+      {/* Main Content */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Department Secretary Dashboard</h2>
+        
+        {isListFinalized && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+            List has been finalized and sent to dean's office
           </div>
-          <DialogFooter>
-            <Button onClick={handleDecline} disabled={!declineReason.trim()}>Submit</Button>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        )}
 
-      {/* View Info Modal */}
-      <Dialog open={!!modal && modal.type === "info"} onOpenChange={open => !open && setModal(null)}>
-        <DialogContent className="max-w-4xl w-full">
-          <DialogHeader>
-            <DialogTitle>Student Information</DialogTitle>
-          </DialogHeader>
-          {modal && modal.studentIdx !== undefined && students[modal.studentIdx] ? (
-            <ViewStudentInfo student={students[modal.studentIdx] as StudentInfoProps['student']} />
-          ) : (
-            <p>Loading student information or student not found.</p>
-          )}
-          <DialogFooter className="mt-4">
-            <DialogClose asChild>
-              <Button variant="outline">Close</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Search Bar */}
+        <Input
+          type="text"
+          placeholder="Search students..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full mb-6"
+        />
 
-      {/* Finalize Modal */}
-      <Dialog open={!!modal && modal.type === "finalize"} onOpenChange={open => !open && setModal(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Finalize Student List</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to finalize this list? Once finalized, it will be sent to the dean's office for review.
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={confirmFinalize}>Yes, Finalize List</Button>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Students Table */}
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentNumber")}>
+                  Student Number {sortBy === "studentNumber" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentName")}>
+                  Student Name {sortBy === "studentName" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("gpa")}>
+                  <div className="flex flex-col">
+                    <span>GPA (Min: 2.0) {sortBy === "gpa" ? (sortDirection === "asc" ? "↑" : "↓") : ""}</span>
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("status")}>
+                  Status {sortBy === "status" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {sortedStudents.map((student) => (
+                <tr key={student.submissionId} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {student.studentNumber}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {student.studentName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {gpaLoadingStates[student.submissionId] ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                        <span className="text-gray-500">Loading...</span>
+                      </div>
+                    ) : student.gpa !== undefined && student.gpa !== null ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{student.gpa.toFixed(2)}</span>
+                        {student.gpa < 2.0 ? (
+                          <>
+                            <XCircle className="w-4 h-4 text-red-500" />
+                            <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
+                              Not enough
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
+                              Sufficient
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 italic">N/A</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                          onClick={() => refreshGPA(student)}
+                          disabled={gpaLoadingStates[student.submissionId]}
+                        >
+                          Refresh
+                        </Button>
+                      </div>
+                    )}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getStatusColor(student.status)}`}>
+                    {student.status}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className={
+                          student.status !== "APPROVED_BY_ADVISOR"
+                            ? "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
+                            : "bg-gray-800 hover:bg-gray-900"
+                        }
+                        disabled={student.status !== "APPROVED_BY_ADVISOR" || isListFinalized}
+                        onClick={() =>
+                          setModal({ type: "accept", student })
+                        }
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className={
+                          student.status !== "APPROVED_BY_ADVISOR"
+                            ? "bg-red-300 cursor-not-allowed hover:bg-red-300"
+                            : ""
+                        }
+                        disabled={student.status !== "APPROVED_BY_ADVISOR" || isListFinalized}
+                        onClick={() =>
+                          setModal({ type: "decline", student })
+                        }
+                      >
+                        Decline
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-gray-800 border-gray-800 hover:bg-gray-800 hover:text-white"
+                        onClick={() =>
+                          setModal({ type: "info", student })
+                        }
+                      >
+                        View Info
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {sortedStudents.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                    {search ? "No students found matching your search." : "No students found."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Finalize Button */}
+        {!isListFinalized && (
+          <Button 
+            onClick={handleFinalize}
+            className="w-full bg-gray-800 hover:bg-gray-900"
+          >
+            Finalize List
+          </Button>
+        )}
+      </main>
+
+      {/* Modals */}
+      {modal && modal.type === "accept" && modal.student && (
+        <Dialog open onOpenChange={() => setModal(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Approval</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to approve {modal.student.studentName}?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={handleAccept}>Approve</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {modal && modal.type === "decline" && modal.student && (
+        <Dialog open onOpenChange={() => setModal(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Decline Student</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for declining {modal.student.studentName}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Label htmlFor="declineReason">Reason for Decline</Label>
+              <Textarea
+                id="declineReason"
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder="Enter reason here..."
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button 
+                onClick={handleDecline} 
+                disabled={!declineReason.trim()} 
+                variant="destructive"
+              >
+                Decline Student
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {modal && modal.type === "info" && modal.student && (
+        <ViewStudentInfoDialog 
+          open={true}
+          onOpenChange={() => setModal(null)}
+          studentNumber={modal.student.studentNumber}
+          initialStudentData={modal.student}
+        />
+      )}
+
+      {modal && modal.type === "finalize" && (
+        <Dialog open onOpenChange={() => setModal(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Finalization</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to finalize the list? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={confirmFinalize} className="bg-gray-800 hover:bg-gray-900">
+                Finalize List
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
-  )
+  );
 } 
