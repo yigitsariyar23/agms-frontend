@@ -13,7 +13,7 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const ACCEPTED_FILE_TYPE = "application/pdf";
 
 interface FileResponse {
-  fileId: number;
+  fileId: string;
   fileName: string;
   fileType: string;
   uploadDate: string;
@@ -27,7 +27,13 @@ interface FileUploadResponse {
   downloadUrl: string;
 }
 
-export default function FileUploadCard() {
+interface FileUploadCardProps {
+  submissionId: string;
+  userRole: 'STUDENT' | 'ADVISOR' | 'DEPARTMENT_SECRETARY' | 'DEAN_OFFICER' | 'STUDENT_AFFAIRS';
+  canDeleteFiles: boolean;
+}
+
+export default function FileUploadCard({ submissionId, userRole, canDeleteFiles }: FileUploadCardProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -37,35 +43,42 @@ export default function FileUploadCard() {
   const { isAuthenticated, token } = useAuth();
   const router = useRouter();
 
-  const fetchUploadedFiles = async () => {
+  const fetchFiles = async () => {
     if (!isAuthenticated || !token) return;
     
     setIsLoadingFiles(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/files/my-files`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/files/submission/${submissionId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch uploaded files');
+        const errorText = await response.text();
+        if (response.status === 404) {
+          throw new Error('Submission not found');
+        } else if (response.status === 403) {
+          throw new Error('You do not have access to this submission');
+        } else {
+          throw new Error(errorText || 'Failed to fetch submission files');
+        }
       }
 
       const data = await response.json();
-      console.log('Received file list:', JSON.stringify(data, null, 2));
+      console.log('Received submission files:', JSON.stringify(data, null, 2));
       setUploadedFiles(data);
     } catch (error) {
-      console.error('Error fetching uploaded files:', error);
-      setError('Failed to load uploaded files');
+      console.error('Error fetching submission files:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load submission files');
     } finally {
       setIsLoadingFiles(false);
     }
   };
 
   useEffect(() => {
-    fetchUploadedFiles();
-  }, [isAuthenticated, token]);
+    fetchFiles();
+  }, [isAuthenticated, token, submissionId]);
 
   const handleDownload = async (file: FileResponse) => {
     try {
@@ -109,29 +122,40 @@ export default function FileUploadCard() {
   };
 
   const handleDelete = async (file: FileResponse) => {
+    if (!canDeleteFiles) {
+      setError('You do not have permission to delete files');
+      return;
+    }
+
     try {
-      // Extract the filename from the downloadUrl
       const filename = file.downloadUrl.split('/').pop();
       console.log('Attempting to delete file:', filename);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/files/${filename}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/files/submission/${submissionId}/file/${filename}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Delete failed with response:', errorText);
-        throw new Error(errorText || `Failed to delete file: ${response.status} ${response.statusText}`);
+        let errorMessage = errorText || `Failed to delete file: ${response.status} ${response.statusText}`;
+        
+        if (response.status === 403) {
+          errorMessage = 'You do not have permission to delete this file';
+        } else if (response.status === 404) {
+          errorMessage = 'File not found';
+        }
+        throw new Error(errorMessage);
       }
 
-      // Check for 204 No Content response
       if (response.status === 204) {
         console.log('File deleted successfully, refreshing file list...');
-        // Refresh the file list after successful deletion
-        await fetchUploadedFiles();
+        await fetchFiles();
         console.log('File list refreshed');
       } else {
         throw new Error('Unexpected response from server');
@@ -224,7 +248,14 @@ export default function FileUploadCard() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/files/upload`, {
+      console.log('Uploading file:', {
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        fileType: selectedFile.type,
+        submissionId
+      });
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/files/upload/${submissionId}`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -232,13 +263,42 @@ export default function FileUploadCard() {
         },
       });
 
+      // Log the raw response for debugging
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Upload failed');
+        let errorMessage = 'Upload failed';
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = responseText || errorMessage;
+        }
+
+        if (response.status === 400) {
+          errorMessage = 'Invalid file or file too large';
+        } else if (response.status === 403) {
+          errorMessage = 'You do not have access to this submission';
+        } else if (response.status === 404) {
+          errorMessage = 'Submission not found';
+        }
+        throw new Error(errorMessage);
       }
 
-      const data: FileUploadResponse = await response.json();
-      console.log("File uploaded successfully:", data);
+      // Try to parse the response as JSON
+      let data: FileUploadResponse;
+      try {
+        data = JSON.parse(responseText);
+        console.log("File uploaded successfully:", data);
+      } catch (parseError) {
+        console.warn("Response was not JSON, but upload might have succeeded");
+        data = { 
+          filename: selectedFile.name,
+          message: "File uploaded successfully",
+          downloadUrl: ""
+        };
+      }
       
       // Clear the selected file after successful upload
       setSelectedFile(null);
@@ -246,7 +306,7 @@ export default function FileUploadCard() {
       if (fileInput) fileInput.value = "";
 
       // Refresh the file list
-      fetchUploadedFiles();
+      await fetchFiles();
       
     } catch (uploadError) {
       console.error("Full upload error:", uploadError);
@@ -270,7 +330,7 @@ export default function FileUploadCard() {
   return (
     <Card className="col-span-1 w-full max-w-lg mx-auto">
       <CardHeader>
-        <CardTitle className="text-lg sm:text-xl">Upload Document</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">Submission Files</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 p-4 sm:p-6">
         <div className="space-y-2">
@@ -320,9 +380,9 @@ export default function FileUploadCard() {
           </Alert>
         )}
         
-        {/* Uploaded Files Section */}
+        {/* Files Section */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Uploaded Files</h3>
+          <h3 className="text-lg font-semibold">Attached Files</h3>
           {isLoadingFiles ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
@@ -352,21 +412,23 @@ export default function FileUploadCard() {
                     >
                       <Download className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(file)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {canDeleteFiles && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(file)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No files uploaded yet
+              No files attached to this submission
             </p>
           )}
         </div>

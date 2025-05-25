@@ -285,7 +285,8 @@ export default function StudentDashboardContent() {
         <ViewStudentInfoDialog 
           open={isStudentInfoDialogOpen}
           onOpenChange={setIsStudentInfoDialogOpen}
-          studentNumber={studentProfile.studentNumber} 
+          studentNumber={studentProfile.studentNumber}
+          initialStudentData={submission || undefined}
         />
       )}
     </div>
