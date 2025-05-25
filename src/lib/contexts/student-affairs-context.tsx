@@ -106,7 +106,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/student-affairs/${staffId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/my-submissions`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +204,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
       }
 
       console.log("approving student", submissionId);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/approve-by-student-affairs`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -217,7 +217,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
         setStudents(prev => 
           prev.map(student => 
             student.submissionId === submissionId 
-              ? { ...student, status: 'FINAL_APPROVED' } 
+              ? { ...student, status: 'GRADUATION_APPROVED' } 
               : student
           )
         );
@@ -225,7 +225,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
         setStudents(prev => 
           prev.map(student => 
             student.submissionId === submissionId 
-              ? { ...student, status: 'FINAL_APPROVED' } 
+              ? { ...student, status: 'STUDENT_AFFAIRS_REJECTED' } 
               : student
           )
         );
@@ -235,7 +235,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
       setStudents(prev => 
         prev.map(student => 
           student.submissionId === submissionId 
-            ? { ...student, status: 'FINAL_APPROVED' } 
+            ? { ...student, status: 'STUDENT_AFFAIRS_REJECTED' } 
             : student
         )
       );
@@ -258,7 +258,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/reject-by-student-affairs?rejectionReason=${reason}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/reject?rejectionReason=${reason}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +271,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
         setStudents(prev => 
           prev.map(student => 
             student.submissionId === submissionId 
-              ? { ...student, status: 'FINAL_REJECTED', declineReason: reason } 
+              ? { ...student, status: 'STUDENT_AFFAIRS_REJECTED', declineReason: reason } 
               : student
           )
         );
@@ -279,7 +279,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
         setStudents(prev => 
           prev.map(student => 
             student.submissionId === submissionId
-              ? { ...student, status: 'FINAL_REJECTED', declineReason: reason } 
+              ? { ...student, status: 'STUDENT_AFFAIRS_REJECTED', declineReason: reason } 
               : student
           )
         );
@@ -289,7 +289,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
       setStudents(prev => 
         prev.map(student => 
           student.submissionId === submissionId 
-            ? { ...student, status: 'FINAL_REJECTED', declineReason: reason } 
+            ? { ...student, status: 'STUDENT_AFFAIRS_REJECTED', declineReason: reason } 
             : student
         )
       );
@@ -312,7 +312,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/student-affairs/${staffId}/finalize`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/my-submissions/finalize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -45,13 +45,15 @@ export default function StudentDashboardContent() {
     switch (status) {
       case "APPROVED_BY_ADVISOR":
       case "APPROVED_BY_DEPT":
-      case "FINAL_APPROVED":
+      case "APPROVED_BY_DEAN":
+      case "GRADUATION_APPROVED":
         return <CheckCircle className="w-5 h-5 text-green-500" />
       case "PENDING":
         return <Clock className="w-5 h-5 text-yellow-500" />
       case "REJECTED_BY_ADVISOR":
       case "REJECTED_BY_DEPT":
-      case "FINAL_REJECTED":
+      case "REJECTED_BY_DEAN":
+      case "STUDENT_AFFAIRS_REJECTED":
         return <XCircle className="w-5 h-5 text-red-500" />
       case "NOT_REQUESTED":
       default:
@@ -68,14 +70,18 @@ export default function StudentDashboardContent() {
         return "Approved by Advisor"
       case "APPROVED_BY_DEPT":
         return "Approved by Department"
-      case "FINAL_APPROVED":
+      case "APPROVED_BY_DEAN":
+        return "Approved by Dean"
+      case "GRADUATION_APPROVED":
         return "Graduation Approved"
       case "REJECTED_BY_ADVISOR":
         return "Declined by Advisor"
       case "REJECTED_BY_DEPT":
         return "Rejected by Department"
-      case "FINAL_REJECTED":
-        return "Rejected by Faculty"
+      case "REJECTED_BY_DEAN":
+        return "Rejected by Dean"
+      case "STUDENT_AFFAIRS_REJECTED":
+        return "Rejected by Student Affairs"
       case "NOT_REQUESTED":
       default:
         return "Not Requested"
@@ -87,13 +93,15 @@ export default function StudentDashboardContent() {
     switch (status) {
       case "APPROVED_BY_ADVISOR":
       case "APPROVED_BY_DEPT":
-      case "FINAL_APPROVED":
+      case "APPROVED_BY_DEAN":
+      case "GRADUATION_APPROVED":
         return "default" as const
       case "PENDING":
         return "secondary" as const
       case "REJECTED_BY_ADVISOR":
       case "REJECTED_BY_DEPT":
-      case "FINAL_REJECTED":
+      case "REJECTED_BY_DEAN":
+      case "STUDENT_AFFAIRS_REJECTED":
         return "destructive" as const
       case "NOT_REQUESTED":
       default:
@@ -128,10 +136,10 @@ export default function StudentDashboardContent() {
     if (submissionLoading && !submission) return "Loading submission details...";
     if (!currentSubmissionStatus) return "Status not available yet.";
 
-    if (["REJECTED_BY_ADVISOR", "REJECTED_BY_DEPT", "FINAL_REJECTED"].includes(currentSubmissionStatus)) {
+    if (["REJECTED_BY_ADVISOR", "REJECTED_BY_DEPT", "REJECTED_BY_DEAN", "STUDENT_AFFAIRS_REJECTED"].includes(currentSubmissionStatus)) {
       return submission.content || "Your application was not approved. Please check comments for details.";
     }
-    if (currentSubmissionStatus === "FINAL_APPROVED") {
+    if (currentSubmissionStatus === "GRADUATION_APPROVED") {
       return submission.content || "Congratulations! Your graduation has been approved.";
     }
     if (submission.deanComment) return `Dean: ${submission.deanComment}`;
@@ -145,11 +153,12 @@ export default function StudentDashboardContent() {
                                currentSubmissionStatus === "NOT_REQUESTED" || 
                                currentSubmissionStatus === "REJECTED_BY_ADVISOR" ||
                                currentSubmissionStatus === "REJECTED_BY_DEPT" ||
-                               currentSubmissionStatus === "FINAL_REJECTED";
+                               currentSubmissionStatus === "REJECTED_BY_DEAN" ||
+                               currentSubmissionStatus === "STUDENT_AFFAIRS_REJECTED";
 
   const requestButtonText = () => {
     if (graduationLoading && canRequestGraduation) return "Submitting...";
-    if (currentSubmissionStatus === "REJECTED_BY_ADVISOR" || currentSubmissionStatus === "REJECTED_BY_DEPT" || currentSubmissionStatus === "FINAL_REJECTED") {
+    if (currentSubmissionStatus === "REJECTED_BY_ADVISOR" || currentSubmissionStatus === "REJECTED_BY_DEPT" || currentSubmissionStatus === "REJECTED_BY_DEAN" || currentSubmissionStatus === "STUDENT_AFFAIRS_REJECTED") {
       return "Request Graduation Again";
     }
     return "Request Graduation";
@@ -211,23 +220,6 @@ export default function StudentDashboardContent() {
                 </div>
               )}
             </div>
-
-            {/* Curriculum Completion Status */}
-            {hasCompletedCurriculum !== null && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Curriculum:</span>
-                <div className="flex items-center gap-2">
-                  {hasCompletedCurriculum ? (
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Clock className="w-4 h-4 text-yellow-500" />
-                  )}
-                  <Badge variant={hasCompletedCurriculum ? "default" : "secondary"}>
-                    {getCurriculumStatus()}
-                  </Badge>
-                </div>
-              </div>
-            )}
 
             {(submission || submissionError || (submissionLoading && !submission)) && (
               <div className="p-3 bg-muted rounded-md">

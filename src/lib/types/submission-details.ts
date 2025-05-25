@@ -1,3 +1,5 @@
+import { GraduationRequestStatus } from "./graduation-status";
+
 export interface SubmissionFile {
   fileId: string;
   fileName: string;
@@ -10,7 +12,7 @@ export interface SubmissionDetails {
   submissionId: string;
   submissionDate: string; // Or Date, if you parse it
   content: string;
-  status: "NOT_REQUESTED" | "PENDING" | "APPROVED_BY_ADVISOR" | "REJECTED_BY_ADVISOR" | "APPROVED_BY_DEPT" | "REJECTED_BY_DEPT" | "APPROVED_BY_DEAN" | "REJECTED_BY_DEAN" | "FINAL_APPROVED" | "FINAL_REJECTED";
+  status: GraduationRequestStatus;
   studentNumber: string;
   studentName: string;
   advisorListId: string; // This might be optional or come from a different source

@@ -74,7 +74,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     try {
       const token = getToken();
       if (!token) {
-        setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Auth token missing for grad status" });
+        setInitialGraduationStatusData({ status: "NOT_REQUESTED", message: "Auth token missing for grad status" });
         return;
       }
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/student/${studentNumber}/latest`, {
@@ -93,14 +93,14 @@ export function StudentProvider({ children }: { children: ReactNode }) {
           });
         } else {
           setInitialGraduationStatusData({
-            status: "NOT_SUBMITTED",
+            status: "NOT_REQUESTED",
             message: "No graduation submission status found."
           });
         }
       } else if (response.status === 404) {
         // No submission exists
         setInitialGraduationStatusData({
-          status: "NOT_SUBMITTED",
+          status: "NOT_REQUESTED",
           message: "Not requested"
         });
       } else {
@@ -110,14 +110,14 @@ export function StudentProvider({ children }: { children: ReactNode }) {
           errorMessage = errorBody.message || errorBody.error || errorMessage;
         } catch (e) { /* Ignore if error body isn't json */ }
         setInitialGraduationStatusData({
-          status: "NOT_SUBMITTED",
+          status: "NOT_REQUESTED",
           message: `Failed to load graduation status: ${errorMessage}`,
         });
       }
     } catch (error) {
       console.error('Error fetching initial graduation status:', error);
       setInitialGraduationStatusData({
-        status: "NOT_SUBMITTED",
+        status: "NOT_REQUESTED",
         message: "Client error fetching graduation status.",
       });
     } finally {
@@ -151,7 +151,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
       if (!token) {
         setStudentProfile(user);
         setLoading(false);
-        setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Auth token missing for profile." });
+        setInitialGraduationStatusData({ status: "NOT_REQUESTED", message: "Auth token missing for profile." });
         return;
       }
       
@@ -177,21 +177,21 @@ export function StudentProvider({ children }: { children: ReactNode }) {
           fetchDetailedStudentData(mergedProfile.studentNumber);
           fetchStudentGraduationStatus(mergedProfile.studentNumber);
         } else {
-          setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Student number not found in profile." });
+          setInitialGraduationStatusData({ status: "NOT_REQUESTED", message: "Student number not found in profile." });
         }
       } else if (profileResponse.status === 401) {
         setStudentProfile(user);
-        setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Unauthorized to fetch profile." });
+        setInitialGraduationStatusData({ status: "NOT_REQUESTED", message: "Unauthorized to fetch profile." });
       } else {
         const errorText = await profileResponse.text();
         console.error('Failed to fetch student academic data:', errorText);
         setStudentProfile(user);
-        setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: `Profile fetch error: ${errorText.substring(0,100)}` });
+        setInitialGraduationStatusData({ status: "NOT_REQUESTED", message: `Profile fetch error: ${errorText.substring(0,100)}` });
       }
     } catch (error) {
       console.error('Error fetching student academic data:', error);
       setStudentProfile(user);
-      setInitialGraduationStatusData({ status: "NOT_SUBMITTED", message: "Client error fetching profile." });
+      setInitialGraduationStatusData({ status: "NOT_REQUESTED", message: "Client error fetching profile." });
     } finally {
       setLoading(false);
     }

@@ -106,7 +106,7 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/department-secretary/${secretaryId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/my-submissions`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +204,7 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
       }
 
       console.log("approving student", submissionId);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/approve-by-secretary`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -258,7 +258,7 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/reject-by-secretary?rejectionReason=${reason}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/reject?rejectionReason=${reason}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

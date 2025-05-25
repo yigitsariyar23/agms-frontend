@@ -91,7 +91,7 @@ function useStudentDetailsByNumber(studentNumber?: string, open?: boolean) {
 
 export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initialStudentData }: ViewStudentInfoDialogProps) {
   const { studentData, loading } = useStudentDetailsByNumber(studentNumber, open)
-  const [showCourses, setShowCourses] = useState(false)
+  const [showCourses, setShowCourses] = useState(true)
   const hasCompletedCurriculum = studentData?.curriculumCompleted ?? false
 
   const getAdvisorName = () => {
