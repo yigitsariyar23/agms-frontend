@@ -30,7 +30,7 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
   } = useStudent();
   
   const [graduationStatus, setGraduationStatus] = useState<GraduationStatusData>({
-    status: "NOT_SUBMITTED", // Default status
+    status: "NOT_REQUESTED", // Default status
     message: "Awaiting student and graduation data..." // Initial message
   });
   const [loading, setLoading] = useState<boolean>(false); // This loading is for context actions like request/withdraw/fetch
@@ -81,14 +81,14 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
           });
         } else {
             setGraduationStatus({
-                status: "NOT_SUBMITTED", // Default if no status in response
+                status: "NOT_REQUESTED", // Default if no status in response
                 message: "Could not retrieve current graduation status."
             });
         }
       } else if (response.status === 404) {
-        // No submission found, treat as NOT_SUBMITTED
+        // No submission found, treat as NOT_REQUESTED
         setGraduationStatus({
-            status: "NOT_SUBMITTED",
+            status: "NOT_REQUESTED",
             message: "Not requested"
         });
       } else {
@@ -104,7 +104,7 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
         } catch (jsonError) {
           console.warn("API error response for fetchGraduationStatus was not valid JSON or lacked a message/error field.", jsonError);
         }
-        setGraduationStatus({ status: "NOT_SUBMITTED", message: `Failed to load graduation status: ${detailedMessage}` });
+        setGraduationStatus({ status: "NOT_REQUESTED", message: `Failed to load graduation status: ${detailedMessage}` });
         // No showAlert by default for fetch, to avoid spamming user if it happens on load.
         // Consider if specific errors here SHOULD alert the user.
       }
@@ -114,7 +114,7 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
       if (error instanceof Error && error.message) {
         clientErrorMessage = error.message;
       }
-      setGraduationStatus({ status: "NOT_SUBMITTED", message: `Network/client error: ${clientErrorMessage}` });
+      setGraduationStatus({ status: "NOT_REQUESTED", message: `Network/client error: ${clientErrorMessage}` });
     } finally {
       setLoading(false);
     }
@@ -135,15 +135,15 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
       });
     } else if (studentProfile && !initialGraduationStatusData) {
         // Student profile loaded, but no specific graduation data came from it (e.g. error in its fetch, or truly no submission)
-        // Default to NOT_SUBMITTED or reflect error message if StudentContext set one.
+        // Default to NOT_REQUESTED or reflect error message if StudentContext set one.
         setGraduationStatus({
-            status: "NOT_SUBMITTED",
+            status: "NOT_REQUESTED",
             message: studentProfile.studentNumber ? "Could not retrieve initial graduation details." : "Student data loaded, but student number missing."
         });
     } else if (!studentProfile) {
         // Student profile itself is not yet loaded
         setGraduationStatus({
-            status: "NOT_SUBMITTED",
+            status: "NOT_REQUESTED",
             message: "Awaiting student data..."
         });
     }
@@ -151,24 +151,24 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
   }, [initialGraduationStatusData, loadingInitialGraduationStatus, studentProfile]);
 
   const requestGraduation = async () => {
-    if (hasCompletedCurriculum === false) {
-      setGraduationStatus({
-        status: "NOT_SUBMITTED",
-        message: "You cannot request graduation until you have completed all curriculum requirements.",
-      });
-      showAlert("Complete curriculum requirements first.", 'info');
-      return;
-    }
+    // if (hasCompletedCurriculum === false) {
+    //   setGraduationStatus({
+    //     status: "NOT_REQUESTED",
+    //     message: "You cannot request graduation until you have completed all curriculum requirements.",
+    //   });
+    //   showAlert("Complete curriculum requirements first.", 'info');
+    //   return;
+    // }
 
     if (!studentProfile?.studentNumber) {
-      setGraduationStatus({ status: "NOT_SUBMITTED", message: "Student information is not available." });
+      setGraduationStatus({ status: "NOT_REQUESTED", message: "Student information is not available." });
       showAlert("Student information not found.", 'error');
       return;
     }
 
     const token = getToken();
     if (!token) {
-      setGraduationStatus({ status: "NOT_SUBMITTED", message: "Authentication error." });
+      setGraduationStatus({ status: "NOT_REQUESTED", message: "Authentication error." });
       showAlert("Authentication error. Please log in.", 'error');
       return;
     }
@@ -207,7 +207,7 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
           console.warn("API error response for requestGraduation was not valid JSON or lacked a message/error field.", jsonError);
         }
         setGraduationStatus({
-          status: "NOT_SUBMITTED",
+          status: "NOT_REQUESTED",
           message: `Failed to submit graduation request: ${detailedMessage}`,
         });
         showAlert(`Submission failed: ${detailedMessage}`, 'error');
@@ -219,7 +219,7 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
         clientErrorMessage = error.message;
       }
       setGraduationStatus({
-        status: "NOT_SUBMITTED",
+        status: "NOT_REQUESTED",
         message: `Error: ${clientErrorMessage}`,
       });
       showAlert(`Submission error: ${clientErrorMessage}`, 'error');
