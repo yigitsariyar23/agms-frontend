@@ -15,7 +15,6 @@ interface GraduationContextType {
   loading: boolean;
   alert: { message: string; type: 'success' | 'error' | 'info' } | null;
   requestGraduation: () => Promise<void>;
-  withdrawGraduationRequest: () => void;
   clearAlert: () => void;
   fetchGraduationStatus: () => Promise<void>; // Added to fetch initial status
 }
@@ -229,76 +228,11 @@ export function GraduationProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const withdrawGraduationRequest = async () => {
-    // Added async and API call for withdrawal
-    if (!studentProfile?.studentNumber) {
-      showAlert("Student information not found.", 'error');
-      return;
-    }
-    const token = getToken();
-    if (!token) {
-      showAlert("Authentication error. Please log in.", 'error');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Assuming a DELETE request to an endpoint like /api/submissions/graduation/{studentNumber}
-      // Or it could be a PUT/POST to update status to WITHDRAWN if your API supports that.
-      // For this example, let's assume a specific withdrawal endpoint.
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/graduation/withdraw/${studentProfile.studentNumber}`, {
-        method: 'POST', // Or DELETE, or PUT to change status, depends on API design
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-         body: JSON.stringify({ // Optional: if your backend needs a payload for withdrawal
-           studentNumber: studentProfile.studentNumber,
-           reason: "Withdrawn by student"
-         }),
-      });
-
-      if (response.ok) {
-        setGraduationStatus({
-          status: "NOT_SUBMITTED", // Or a specific "WITHDRAWN" status if you add it
-          message: "Your graduation request has been withdrawn.",
-        });
-        showAlert("Graduation request withdrawn successfully.", 'success');
-      } else { // Non-OK response
-        let detailedMessage = response.statusText || "Withdrawal failed";
-        try {
-          const errorBody = await response.json();
-          if (errorBody && typeof errorBody.message === 'string' && errorBody.message.trim() !== '') {
-            detailedMessage = errorBody.message;
-          } else if (errorBody && typeof errorBody.error === 'string' && errorBody.error.trim() !== '') {
-            detailedMessage = errorBody.error;
-          }
-        } catch (jsonError) {
-          console.warn("API error response for withdrawGraduationRequest was not valid JSON or lacked a message/error field.", jsonError);
-        }
-        // On failed withdrawal, keep current status but show alert
-        showAlert(`Failed to withdraw request: ${detailedMessage}`, 'error');
-        // Optionally, update graduationStatus.message too, or leave it as is.
-        // For now, only showing alert and not changing the underlying status/message for a failed withdrawal.
-      }
-    } catch (error) {
-      console.error("Error withdrawing graduation request:", error);
-      let clientErrorMessage = "A network error or client-side issue occurred during withdrawal.";
-      if (error instanceof Error && error.message) {
-        clientErrorMessage = error.message;
-      }
-      showAlert(`Withdrawal error: ${clientErrorMessage}`, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
   const value = {
     graduationStatus,
     loading,
     alert,
     requestGraduation,
-    withdrawGraduationRequest,
     clearAlert,
     fetchGraduationStatus,
   };

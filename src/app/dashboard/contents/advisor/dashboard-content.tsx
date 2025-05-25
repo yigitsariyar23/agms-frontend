@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useAdvisor, AdvisorStudent } from "@/lib/contexts/advisor-context";
 import { useUser } from "@/lib/contexts/user-context";
 import { ViewStudentInfoDialog } from "@/components/student/view-student-info-dialog";
+import { CheckCircle, XCircle } from "lucide-react";
 
 interface ModalState {
   type: "accept" | "decline" | "info" | "finalize";
@@ -38,13 +39,47 @@ export default function AdvisorDashboard() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<ModalState | null>(null);
   const [declineReason, setDeclineReason] = useState("");
+  const [sortBy, setSortBy] = useState<keyof AdvisorStudent | null>("studentNumber");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [gpaLoadingStates, setGpaLoadingStates] = useState<Record<string, boolean>>({});
+
+  const handleSort = (field: keyof AdvisorStudent) => {
+    if (sortBy === field) {
+      setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setSortDirection("asc");
+    }
+  };
 
   // Filter students based on search
   const filteredStudents = students.filter(
     (student) =>
       student.name.toLowerCase().includes(search.toLowerCase()) ||
-      student.studentNumber.includes(search)
+      student.studentNumber.toString().includes(search)
   );
+
+  // Sort students based on current sort field and direction
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    if (!sortBy) return 0;
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
+
+    if (typeof aVal === "string" && typeof bVal === "string") {
+      return sortDirection === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+    if (typeof aVal === "number" && typeof bVal === "number") {
+      return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+    }
+    // Handle cases where one or both values might be undefined/null
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return sortDirection === "asc" ? -1 : 1;
+    if (bVal == null) return sortDirection === "asc" ? 1 : -1;
+    
+    return 0;
+  });
 
   const handleAccept = async () => {
     if (modal && modal.student) {
@@ -93,6 +128,40 @@ export default function AdvisorDashboard() {
     }
   };
 
+  const refreshGPA = async (student: AdvisorStudent) => {
+    setGpaLoadingStates(prev => ({ ...prev, [student.id]: true }));
+    
+    try {
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      if (!token) {
+        console.error('No token available');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/${student.studentNumber}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const detailedData = await response.json();
+        // Update the specific student's GPA in the context
+        // Note: This would ideally be done through the context, but for simplicity we'll trigger a refetch
+        window.location.reload(); // Temporary solution - ideally we'd update the context state
+      } else {
+        console.error('Failed to refresh GPA data');
+      }
+    } catch (error) {
+      console.error('Error refreshing GPA data:', error);
+    } finally {
+      setGpaLoadingStates(prev => ({ ...prev, [student.id]: false }));
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -121,6 +190,7 @@ export default function AdvisorDashboard() {
           </div>
         )}
 
+
         {/* Search Bar */}
         <Input
           type="text"
@@ -135,14 +205,19 @@ export default function AdvisorDashboard() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Student Number
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentNumber")}>
+                  Student Number {sortBy === "studentNumber" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Student Name
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("name")}>
+                  Student Name {sortBy === "name" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("gpa")}>
+                  <div className="flex flex-col">
+                    <span>GPA (Min: 2.0) {sortBy === "gpa" ? (sortDirection === "asc" ? "↑" : "↓") : ""}</span>
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("status")}>
+                  Status {sortBy === "status" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -150,13 +225,53 @@ export default function AdvisorDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredStudents.map((student) => (
+              {sortedStudents.map((student) => (
                 <tr key={student.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {student.studentNumber}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {student.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {gpaLoadingStates[student.id] ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                        <span className="text-gray-500">Loading...</span>
+                      </div>
+                    ) : student.gpa !== undefined && student.gpa !== null ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{student.gpa.toFixed(2)}</span>
+                        {student.gpa < 2.0 ? (
+                          <>
+                            <XCircle className="w-4 h-4 text-red-500" />
+                            <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
+                              Not enough
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
+                              Sufficient
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 italic">N/A</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                          onClick={() => refreshGPA(student)}
+                          disabled={gpaLoadingStates[student.id]}
+                        >
+                          Refresh
+                        </Button>
+                      </div>
+                    )}
                   </td>
                   <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getStatusColor(student.status)}`}>
                     {student.status}
@@ -206,9 +321,9 @@ export default function AdvisorDashboard() {
                   </td>
                 </tr>
               ))}
-              {filteredStudents.length === 0 && (
+              {sortedStudents.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                     {search ? "No students found matching your search." : "No students found."}
                   </td>
                 </tr>

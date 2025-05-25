@@ -165,7 +165,10 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
           semester: item.semester,
         }));
         
-        setStudents(studentsData);
+        // Enrich students with detailed GPA data if missing
+        const enrichedStudentsData = await enrichStudentsWithGPA(studentsData, token);
+        
+        setStudents(enrichedStudentsData);
       } else {
         const errorText = await response.text();
         console.error('Failed to fetch students:', errorText);
@@ -175,6 +178,45 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     }
     
     setLoading(false);
+  };
+
+  // Function to enrich students with GPA data from detailed student API
+  const enrichStudentsWithGPA = async (students: AdvisorStudent[], token: string): Promise<AdvisorStudent[]> => {
+    const enrichedStudents = await Promise.all(
+      students.map(async (student) => {
+        // If GPA is already available and valid, keep it
+        if (student.gpa !== undefined && student.gpa !== null && !isNaN(student.gpa)) {
+          return student;
+        }
+
+        try {
+          // Fetch detailed student data to get GPA
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students/${student.studentNumber}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            credentials: 'include',
+          });
+
+          if (response.ok) {
+            const detailedData = await response.json();
+            
+            return {
+              ...student,
+              gpa: detailedData.gpa ?? student.gpa,
+            };
+          } else {
+            return student;
+          }
+        } catch (error) {
+          return student;
+        }
+      })
+    );
+
+    return enrichedStudents;
   };
 
   const approveStudent = async (studentId: string): Promise<void> => {

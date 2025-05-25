@@ -17,7 +17,6 @@ export default function StudentDashboardContent() {
     loading: graduationLoading,
     alert: graduationAlert,
     requestGraduation,
-    withdrawGraduationRequest,
     clearAlert
   } = useGraduation()
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false)
@@ -169,17 +168,6 @@ export default function StudentDashboardContent() {
                 </>
               )}
               
-              {graduationStatus.status === "PENDING" && (
-                <Button 
-                  onClick={withdrawGraduationRequest}
-                  variant="outline"
-                  className="border-red-300 text-red-600 hover:bg-red-50 flex-grow"
-                  disabled={graduationLoading}
-                >
-                  {graduationLoading && graduationStatus.status === "PENDING" ? "Withdrawing..." : "Withdraw Request"}
-                </Button>
-              )}
-
               {graduationStatus.status === "REJECTED" && (
                 <>
                   <Button 
