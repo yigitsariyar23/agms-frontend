@@ -43,10 +43,10 @@ export function Header({ className }: HeaderProps) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
         {/* Left: Logo and AGMS */}
         <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center space-x-2 sm:space-x-6 hover:cursor-pointer">
+          <div className="flex items-center space-x-2 sm:space-x-6">
             <Image src="/iyte-logo.png" alt="IYTE Logo" className="h-8 w-8 sm:h-12 sm:w-12 object-contain" width={360} height={360} />
             <span className="font-bold text-lg sm:text-xl">AGMS</span>
-          </Link>
+          </div>
         </div>
 
         {/* Right: User Avatar, Name and Logout */}
