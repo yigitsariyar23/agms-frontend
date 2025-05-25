@@ -29,7 +29,7 @@ export default function StudentDashboardContent() {
   } = useSubmission()
 
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false)
-  const { studentProfile, hasCompletedCurriculum, getCurriculumStatus, loading: studentLoading } = useStudent()
+  const { studentProfile, studentData, hasCompletedCurriculum, getCurriculumStatus, loading: studentLoading } = useStudent()
 
   useEffect(() => {
     if (studentProfile?.studentNumber && fetchSubmissionByStudentNumber) {
@@ -218,6 +218,25 @@ export default function StudentDashboardContent() {
                     {getStatusText(currentSubmissionStatus)}
                   </Badge>
                 </div>
+              )}
+            </div>
+
+            {/* Graduation Eligibility Status */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-[#2E2E2E] dark:text-[#F4F2F9]">Graduation Eligibility:</span>
+              {studentData?.eligibleForGraduation !== undefined ? (
+                <div className="flex items-center gap-2">
+                  {studentData.eligibleForGraduation ? (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-500" />
+                  )}
+                  <Badge variant={studentData.eligibleForGraduation ? "default" : "destructive"}>
+                    {studentData.eligibleForGraduation ? "Eligible" : "Not Eligible"}
+                  </Badge>
+                </div>
+              ) : (
+                <span className="text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">Loading eligibility...</span>
               )}
             </div>
 

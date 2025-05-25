@@ -7,6 +7,8 @@ export interface Course {
   grade?: string;
   semester?: string;
   year?: string;
+  passing?: boolean;
+  gpaPoints?: number;
 }
 
 export interface StudentData {
@@ -21,4 +23,5 @@ export interface StudentData {
     department?: string;
     advisor?: AdvisorDetails | null;
     courses?: Course[];
+    eligibleForGraduation?: boolean;
 }

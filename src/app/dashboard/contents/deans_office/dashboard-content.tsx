@@ -30,10 +30,13 @@ export default function DeansOfficeDashboard() {
   const { user } = useUser();
   const { 
     students, 
+    departmentLists,
     loading, 
+    departmentListsLoading,
     approveStudent, 
     declineStudent, 
     finalizeList, 
+    canFinalize,
     isListFinalized 
   } = useDeansOffice();
   
@@ -58,6 +61,14 @@ export default function DeansOfficeDashboard() {
     (student) =>
       (student.studentName?.toLowerCase() || "").includes(search.toLowerCase()) ||
       (student.studentNumber || "").includes(search)
+  );
+
+  // Filter department lists based on search
+  const filteredDepartmentLists = departmentLists.filter(
+    (department) =>
+      (department.departmentName?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (department.secretaryName?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (department.secretaryEmail?.toLowerCase() || "").includes(search.toLowerCase())
   );
 
   // Sort students based on current sort field and direction
@@ -100,12 +111,24 @@ export default function DeansOfficeDashboard() {
   };
 
   const handleFinalize = () => {
-    const hasPendingStudents = students.some((s) => s.status === "APPROVED_BY_DEPT");
-    if (hasPendingStudents) {
-      toast.error(
-        "All students must be either approved or declined before finalizing"
+    if (!canFinalize()) {
+      const allDepartmentListsFinalized = departmentLists.length > 0 && departmentLists.every(dept => dept.isFinalized);
+      const hasApprovedOrRejectedStudents = students.some(student => 
+        student.status === 'APPROVED_BY_DEAN' || 
+        student.status === 'REJECTED_BY_DEAN' ||
+        student.status === 'APPROVED_BY_DEPT' ||
+        student.status === 'REJECTED_BY_DEPT'
       );
-      return;
+      
+      if (!allDepartmentListsFinalized) {
+        toast.error("All department lists must be finalized before dean list can be finalized");
+        return;
+      }
+      
+      if (hasApprovedOrRejectedStudents) {
+        toast.error("Cannot finalize list while there are students with approved or rejected status");
+        return;
+      }
     }
     setModal({ type: "finalize" });
   };
@@ -121,12 +144,12 @@ export default function DeansOfficeDashboard() {
       case "APPROVED_BY_ADVISOR":
       case "APPROVED_BY_DEPT":
       case "APPROVED_BY_DEAN":
-      case "FINAL_APPROVED":
+      case "GRADUATION_APPROVED":
         return "text-green-600";
       case "REJECTED_BY_ADVISOR":
       case "REJECTED_BY_DEPT":
       case "REJECTED_BY_DEAN":
-      case "FINAL_REJECTED":
+      case "STUDENT_AFFAIRS_REJECTED":
         return "text-red-600";
       case "PENDING":
         return "text-yellow-600";
@@ -202,13 +225,17 @@ export default function DeansOfficeDashboard() {
         {/* Search Bar */}
         <Input
           type="text"
-          placeholder="Search students..."
+          placeholder="Search students and departments..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full mb-6 bg-[#FFFFFF] dark:bg-[#3E3E3E] text-[#2E2E2E] dark:text-[#F4F2F9] border-[#DCD9E4] dark:border-[#4A4A4A] focus:ring-2 focus:ring-[#5B3E96] dark:focus:ring-[#937DC7]"
         />
 
         {/* Students Table */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-[#2E2E2E] dark:text-[#F4F2F9] mb-4">
+            Students ({students.length})
+          </h3>
         <div className="bg-[#FFFFFF] dark:bg-[#3E3E3E] rounded-lg shadow overflow-hidden mb-6 border border-[#DCD9E4] dark:border-[#4A4A4A]">
           <table className="min-w-full divide-y divide-[#DCD9E4] dark:divide-[#4A4A4A]">
             <thead className="bg-[#F4F2F9] dark:bg-[#2E2E2E]">
@@ -340,15 +367,147 @@ export default function DeansOfficeDashboard() {
           </table>
         </div>
 
+        {/* Department Lists Table */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-[#2E2E2E] dark:text-[#F4F2F9] mb-4">
+            Department Lists ({departmentLists.length})
+          </h3>
+        <div className="bg-[#FFFFFF] dark:bg-[#3E3E3E] rounded-lg shadow overflow-hidden mb-6 border border-[#DCD9E4] dark:border-[#4A4A4A]">
+          {departmentListsLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-pulse">
+                <div className="h-8 bg-[#BEBBCF] dark:bg-[#5C5C5C] rounded w-1/4 mx-auto mb-4"></div>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 bg-[#BEBBCF] dark:bg-[#5C5C5C] rounded"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-[#DCD9E4] dark:divide-[#4A4A4A]">
+              <thead className="bg-[#F4F2F9] dark:bg-[#2E2E2E]">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
+                    Department Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
+                    Secretary Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
+                    Students
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
+                    Last Updated
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-[#FFFFFF] dark:bg-[#3E3E3E] divide-y divide-[#DCD9E4] dark:divide-[#4A4A4A]">
+                {filteredDepartmentLists.map((department) => (
+                  <tr key={department.departmentId} className="hover:bg-[#F4F2F9] dark:hover:bg-[#4A4A4A]">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
+                      {department.departmentName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
+                      {department.secretaryName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
+                      {department.secretaryEmail}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-semibold">
+                            Total: {department.totalStudents}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
+                            ✓ {department.approvedStudents}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
+                            ✗ {department.rejectedStudents}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold">
+                            ⏳ {department.pendingStudents}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {department.isFinalized ? (
+                        <div className="flex items-center">
+                          <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                          <span className="text-green-600 font-medium">Finalized</span>
+                          {department.finalizedDate && (
+                            <div className="text-xs text-gray-500 ml-2">
+                              {new Date(department.finalizedDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center">
+                          <XCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                          <span className="text-yellow-600 font-medium">In Progress</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">
+                      {new Date(department.lastUpdated).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+                {filteredDepartmentLists.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                      {search ? "No departments found matching your search." : "No department lists found."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+        </div>
+
         {/* Finalize Button */}
         {!isListFinalized && (
-          <Button 
-            onClick={handleFinalize}
-            className="w-full bg-gray-800 hover:bg-gray-900"
-          >
-            Finalize List
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={handleFinalize}
+              disabled={!canFinalize()}
+              className={`w-full ${
+                canFinalize() 
+                  ? "bg-gray-800 hover:bg-gray-900" 
+                  : "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
+              }`}
+            >
+              Finalize List
+            </Button>
+            {!canFinalize() && (
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {departmentLists.length === 0 || !departmentLists.every(dept => dept.isFinalized) ? (
+                  <p>• All department lists must be finalized first</p>
+                ) : null}
+                {students.some(student => 
+                  student.status === 'APPROVED_BY_DEAN' || 
+                  student.status === 'REJECTED_BY_DEAN' ||
+                  student.status === 'APPROVED_BY_DEPT' ||
+                  student.status === 'REJECTED_BY_DEPT'
+                ) ? (
+                  <p>• No students should have approved or rejected status</p>
+                ) : null}
+              </div>
+            )}
+          </div>
         )}
+        </div>
       </main>
 
       {/* Modals */}

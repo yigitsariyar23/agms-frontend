@@ -5,16 +5,21 @@ import { User } from '../types/user';
 import { useUser } from './user-context';
 import { getToken } from '../utils/jwt';
 import { SubmissionDetails } from '../types/submission-details';
+import { DepartmentList } from '../types/department-list';
 
 interface DeansOfficeContextType {
   deanProfile: User | null;
   students: SubmissionDetails[];
+  departmentLists: DepartmentList[];
   loading: boolean;
+  departmentListsLoading: boolean;
   fetchDeanProfile: () => Promise<void>;
   fetchStudents: () => Promise<void>;
+  fetchDepartmentLists: () => Promise<void>;
   approveStudent: (submissionId: string) => Promise<void>;
   declineStudent: (submissionId: string, reason: string) => Promise<void>;
   finalizeList: () => Promise<void>;
+  canFinalize: () => boolean;
   isListFinalized: boolean;
 }
 
@@ -23,7 +28,9 @@ const DeansOfficeContext = createContext<DeansOfficeContextType | undefined>(und
 export function DeansOfficeProvider({ children }: { children: ReactNode }) {
   const [deanProfile, setDeanProfile] = useState<User | null>(null);
   const [students, setStudents] = useState<SubmissionDetails[]>([]);
+  const [departmentLists, setDepartmentLists] = useState<DepartmentList[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [departmentListsLoading, setDepartmentListsLoading] = useState<boolean>(false);
   const [isListFinalized, setIsListFinalized] = useState<boolean>(false);
   const { user } = useUser();
 
@@ -297,7 +304,129 @@ export function DeansOfficeProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchDepartmentLists = async (): Promise<void> => {
+    if (!user) return;
+    
+    setDepartmentListsLoading(true);
+    
+    try {
+      const token = getToken();
+      if (!token) {
+        setDepartmentListsLoading(false);
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/subordinate-status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const apiData = await response.json();
+        
+        // Transform API response to match DepartmentList interface and fetch student counts
+        const departmentListsData: DepartmentList[] = await Promise.all(
+          apiData.map(async (item: any) => {
+            // Fetch student counts for each department
+            let studentCounts = {
+              totalStudents: 0,
+              approvedStudents: 0,
+              rejectedStudents: 0,
+              pendingStudents: 0,
+            };
+
+            try {
+              const studentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/department/${item.departmentId}`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                credentials: 'include',
+              });
+
+              if (studentResponse.ok) {
+                const studentData = await studentResponse.json();
+                studentCounts.totalStudents = studentData.length;
+                studentCounts.approvedStudents = studentData.filter((s: any) => s.status === 'APPROVED_BY_DEPT').length;
+                studentCounts.rejectedStudents = studentData.filter((s: any) => s.status === 'REJECTED_BY_DEPT').length;
+                studentCounts.pendingStudents = studentData.filter((s: any) => s.status === 'APPROVED_BY_DEPT').length;
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch student counts for department ${item.departmentId}:`, error);
+            }
+
+            return {
+              departmentId: item.departmentId || item.empId,
+              departmentName: item.departmentName || item.department || 'Unknown Department',
+              secretaryName: item.secretaryName || item.name,
+              secretaryEmail: item.secretaryEmail || item.email,
+              ...studentCounts,
+              isFinalized: item.isFinalized,
+              finalizedDate: item.isFinalized ? new Date().toISOString() : undefined,
+              lastUpdated: new Date().toISOString(),
+            };
+          })
+        );
+        
+        setDepartmentLists(departmentListsData);
+      } else {
+        const errorText = await response.text();
+        if (response.status === 404 || errorText.includes("No static resource")) {
+          console.warn('Dean office department lists API endpoint not implemented yet. Using empty department list.');
+          setDepartmentLists([]);
+        } else {
+          console.error('Failed to fetch department lists:', errorText);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching department lists:', error);
+    }
+    
+    setDepartmentListsLoading(false);
+  };
+
+  const canFinalize = (): boolean => {
+    // Check if all department lists are finalized
+    const allDepartmentListsFinalized = departmentLists.length > 0 && departmentLists.every(dept => dept.isFinalized);
+    
+    // Check if there are no students with approved or rejected status (only pending or not requested)
+    const hasApprovedOrRejectedStudents = students.some(student => 
+      student.status === 'APPROVED_BY_DEAN' || 
+      student.status === 'REJECTED_BY_DEAN' ||
+      student.status === 'APPROVED_BY_DEPT' ||
+      student.status === 'REJECTED_BY_DEPT'
+    );
+    
+    return allDepartmentListsFinalized && !hasApprovedOrRejectedStudents;
+  };
+
   const finalizeList = async (): Promise<void> => {
+    // Validate finalization conditions
+    if (!canFinalize()) {
+      const allDepartmentListsFinalized = departmentLists.length > 0 && departmentLists.every(dept => dept.isFinalized);
+      const hasApprovedOrRejectedStudents = students.some(student => 
+        student.status === 'APPROVED_BY_DEAN' || 
+        student.status === 'REJECTED_BY_DEAN' ||
+        student.status === 'APPROVED_BY_DEPT' ||
+        student.status === 'REJECTED_BY_DEPT'
+      );
+      
+      if (!allDepartmentListsFinalized) {
+        throw new Error('All department lists must be finalized before dean list can be finalized');
+      }
+      
+      if (hasApprovedOrRejectedStudents) {
+        throw new Error('Cannot finalize list while there are students with approved or rejected status');
+      }
+      
+      return;
+    }
+
     try {
       const token = getToken();
       if (!token) {
@@ -345,18 +474,23 @@ export function DeansOfficeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (deanProfile && user && (user.role === 'DEAN_OFFICER' || user.role === 'ROLE_DEANS_OFFICE')) {
       fetchStudents();
+      fetchDepartmentLists();
     }
   }, [deanProfile]);
 
   const value = {
     deanProfile,
     students,
+    departmentLists,
     loading,
+    departmentListsLoading,
     fetchDeanProfile,
     fetchStudents,
+    fetchDepartmentLists,
     approveStudent,
     declineStudent,
     finalizeList,
+    canFinalize,
     isListFinalized,
   };
 

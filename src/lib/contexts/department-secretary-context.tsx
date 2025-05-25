@@ -5,16 +5,21 @@ import { User } from '../types/user';
 import { useUser } from './user-context';
 import { getToken } from '../utils/jwt';
 import { SubmissionDetails } from '../types/submission-details';
+import { AdvisorList } from '../types/advisor-list';
 
 interface DepartmentSecretaryContextType {
   secretaryProfile: User | null;
   students: SubmissionDetails[];
+  advisorLists: AdvisorList[];
   loading: boolean;
+  advisorListsLoading: boolean;
   fetchSecretaryProfile: () => Promise<void>;
   fetchStudents: () => Promise<void>;
+  fetchAdvisorLists: () => Promise<void>;
   approveStudent: (submissionId: string) => Promise<void>;
   declineStudent: (submissionId: string, reason: string) => Promise<void>;
   finalizeList: () => Promise<void>;
+  canFinalize: () => boolean;
   isListFinalized: boolean;
 }
 
@@ -23,7 +28,9 @@ const DepartmentSecretaryContext = createContext<DepartmentSecretaryContextType 
 export function DepartmentSecretaryProvider({ children }: { children: ReactNode }) {
   const [secretaryProfile, setSecretaryProfile] = useState<User | null>(null);
   const [students, setStudents] = useState<SubmissionDetails[]>([]);
+  const [advisorLists, setAdvisorLists] = useState<AdvisorList[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [advisorListsLoading, setAdvisorListsLoading] = useState<boolean>(false);
   const [isListFinalized, setIsListFinalized] = useState<boolean>(false);
   const { user } = useUser();
 
@@ -195,6 +202,92 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
     return enrichedStudents;
   };
 
+  const fetchAdvisorLists = async (): Promise<void> => {
+    if (!user) return;
+    
+    setAdvisorListsLoading(true);
+    
+    try {
+      const token = getToken();
+      if (!token) {
+        setAdvisorListsLoading(false);
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/subordinate-status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const apiData = await response.json();
+        
+        // Transform API response to match AdvisorList interface and fetch student counts
+        const advisorListsData: AdvisorList[] = await Promise.all(
+          apiData.map(async (item: any) => {
+            // Fetch student counts for each advisor
+            let studentCounts = {
+              totalStudents: 0,
+              approvedStudents: 0,
+              rejectedStudents: 0,
+              pendingStudents: 0,
+            };
+
+            try {
+              const studentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/advisor/${item.empId}`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                credentials: 'include',
+              });
+
+              if (studentResponse.ok) {
+                const studentData = await studentResponse.json();
+                studentCounts.totalStudents = studentData.length;
+                studentCounts.approvedStudents = studentData.filter((s: any) => s.status === 'APPROVED_BY_ADVISOR').length;
+                studentCounts.rejectedStudents = studentData.filter((s: any) => s.status === 'REJECTED_BY_ADVISOR').length;
+                studentCounts.pendingStudents = studentData.filter((s: any) => s.status === 'PENDING').length;
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch student counts for advisor ${item.empId}:`, error);
+            }
+
+            return {
+              advisorId: item.empId,
+              advisorName: item.name,
+              advisorEmail: item.email,
+              department: item.department || 'Unknown',
+              ...studentCounts,
+              isFinalized: item.isFinalized,
+              finalizedDate: item.isFinalized ? new Date().toISOString() : undefined,
+              lastUpdated: new Date().toISOString(),
+            };
+          })
+        );
+        
+        setAdvisorLists(advisorListsData);
+      } else {
+        const errorText = await response.text();
+        if (response.status === 404 || errorText.includes("No static resource")) {
+          console.warn('Advisor lists API endpoint not implemented yet. Using empty advisor lists.');
+          setAdvisorLists([]);
+        } else {
+          console.error('Failed to fetch advisor lists:', errorText);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching advisor lists:', error);
+    }
+    
+    setAdvisorListsLoading(false);
+  };
+
   const approveStudent = async (submissionId: string): Promise<void> => {
     try {
       const token = getToken();
@@ -297,7 +390,43 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
     }
   };
 
+  const canFinalize = (): boolean => {
+    // Check if all advisor lists are finalized
+    const allAdvisorListsFinalized = advisorLists.length > 0 && advisorLists.every(advisor => advisor.isFinalized);
+    
+    // Check if there are no students with approved or rejected status (only pending or not requested)
+    const hasApprovedOrRejectedStudents = students.some(student => 
+      student.status === 'APPROVED_BY_DEPT' || 
+      student.status === 'REJECTED_BY_DEPT' ||
+      student.status === 'APPROVED_BY_ADVISOR' ||
+      student.status === 'REJECTED_BY_ADVISOR'
+    );
+    
+    return allAdvisorListsFinalized && !hasApprovedOrRejectedStudents;
+  };
+
   const finalizeList = async (): Promise<void> => {
+    // Validate finalization conditions
+    if (!canFinalize()) {
+      const allAdvisorListsFinalized = advisorLists.length > 0 && advisorLists.every(advisor => advisor.isFinalized);
+      const hasApprovedOrRejectedStudents = students.some(student => 
+        student.status === 'APPROVED_BY_DEPT' || 
+        student.status === 'REJECTED_BY_DEPT' ||
+        student.status === 'APPROVED_BY_ADVISOR' ||
+        student.status === 'REJECTED_BY_ADVISOR'
+      );
+      
+      if (!allAdvisorListsFinalized) {
+        throw new Error('All advisor lists must be finalized before department list can be finalized');
+      }
+      
+      if (hasApprovedOrRejectedStudents) {
+        throw new Error('Cannot finalize list while there are students with approved or rejected status');
+      }
+      
+      return;
+    }
+
     try {
       const token = getToken();
       if (!token) {
@@ -345,18 +474,23 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
   useEffect(() => {
     if (secretaryProfile && user && (user.role === 'DEPARTMENT_SECRETARY' || user.role === 'ROLE_DEPARTMENT_SECRETARY')) {
       fetchStudents();
+      fetchAdvisorLists();
     }
   }, [secretaryProfile]);
 
   const value = {
     secretaryProfile,
     students,
+    advisorLists,
     loading,
+    advisorListsLoading,
     fetchSecretaryProfile,
     fetchStudents,
+    fetchAdvisorLists,
     approveStudent,
     declineStudent,
     finalizeList,
+    canFinalize,
     isListFinalized,
   };
 
