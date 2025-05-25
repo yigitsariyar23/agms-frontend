@@ -118,11 +118,11 @@ export default function StudentDashboardContent() {
   // Early return or skeleton if studentProfile or studentNumber is not yet loaded
   if (studentLoading || !studentProfile?.studentNumber) {
     return (
-      <div className="space-y-6 p-6 animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="space-y-6 p-6 animate-pulse bg-[#F4F2F9] dark:bg-[#2E2E2E]">
+        <div className="h-8 bg-[#BEBBCF] dark:bg-[#5C5C5C] rounded w-1/3 mb-4"></div>
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="h-64 bg-gray-200 rounded"></div>
-          <div className="h-48 bg-gray-200 rounded"></div>
+          <div className="h-64 bg-[#BEBBCF] dark:bg-[#5C5C5C] rounded"></div>
+          <div className="h-48 bg-[#BEBBCF] dark:bg-[#5C5C5C] rounded"></div>
         </div>
       </div>
     );
@@ -165,18 +165,18 @@ export default function StudentDashboardContent() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-[#F4F2F9] dark:bg-[#2E2E2E]">
       <div className="flex items-center justify-between">
         {/* Removed Student Dashboard title */}
       </div>
 
       {/* Global Alert Display Area - Using the new alert from context */}
       {graduationAlert && (
-        <Alert className={`border-${graduationAlert.type === 'error' ? 'red' : graduationAlert.type === 'success' ? 'green' : 'blue'}-200 bg-${graduationAlert.type === 'error' ? 'red' : graduationAlert.type === 'success' ? 'green' : 'blue'}-50`}>
-          {graduationAlert.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500" />}
-          {graduationAlert.type === 'error' && <XCircle className="h-4 w-4 text-red-500" />}
-          {graduationAlert.type === 'info' && <Clock className="h-4 w-4 text-blue-500" />}
-          <AlertDescription className={`text-${graduationAlert.type === 'error' ? 'red' : graduationAlert.type === 'success' ? 'green' : 'blue'}-700`}>
+        <Alert className={`border-${graduationAlert.type === 'error' ? '[#E57373]' : graduationAlert.type === 'success' ? '[#3BAE8E]' : '[#5B3E96]'} bg-${graduationAlert.type === 'error' ? '[#FCE8E8]' : graduationAlert.type === 'success' ? '[#E3F6F1]' : '[#E9E5F2]'} dark:bg-${graduationAlert.type === 'error' ? '[#5E2E2E]' : graduationAlert.type === 'success' ? '[#2C4A42]' : '[#3E364A]'}`}>
+          {graduationAlert.type === 'success' && <CheckCircle className="h-4 w-4 text-[#3BAE8E] dark:text-[#A5DBCB]" />}
+          {graduationAlert.type === 'error' && <XCircle className="h-4 w-4 text-[#E57373] dark:text-[#F4C7C7]" />}
+          {graduationAlert.type === 'info' && <Clock className="h-4 w-4 text-[#5B3E96] dark:text-[#937DC7]" />}
+          <AlertDescription className={`text-${graduationAlert.type === 'error' ? '[#E57373] dark:text-[#F4C7C7]' : graduationAlert.type === 'success' ? '[#3BAE8E] dark:text-[#A5DBCB]' : '[#5B3E96] dark:text-[#937DC7]'}`}>
             <strong>{graduationAlert.type.charAt(0).toUpperCase() + graduationAlert.type.slice(1)}</strong>
             <br />
             {graduationAlert.message}
@@ -184,9 +184,9 @@ export default function StudentDashboardContent() {
         </Alert>
       )}
       {submissionError && (
-         <Alert variant="destructive">
-           <XCircle className="h-4 w-4" />
-           <AlertDescription>
+         <Alert variant="destructive" className="mb-4 bg-[#FCE8E8] dark:bg-[#5E2E2E] border-[#E57373] dark:border-[#E57373]">
+           <XCircle className="h-4 w-4 text-[#E57373] dark:text-[#F4C7C7]" />
+           <AlertDescription className="text-[#E57373] dark:text-[#F4C7C7]">
              <strong>Error Fetching Submission</strong>
              <br />
              {submissionError}
@@ -196,21 +196,21 @@ export default function StudentDashboardContent() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Graduation Status Card */}
-        <Card>
+        <Card className="bg-[#FFFFFF] dark:bg-[#3E3E3E] border-[#DCD9E4] dark:border-[#4A4A4A]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="w-6 h-6" />
+            <CardTitle className="flex items-center gap-2 text-[#2E2E2E] dark:text-[#F4F2F9]">
+              <GraduationCap className="w-6 h-6 text-[#5B3E96] dark:text-[#937DC7]" />
               Graduation Status
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-[#6D6D6D] dark:text-[#A9A9A9]">
               Track your graduation application progress
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Current Status:</span>
+              <span className="text-sm font-medium text-[#2E2E2E] dark:text-[#F4F2F9]">Current Status:</span>
               {(submissionLoading && !submission) ? (
-                <span className="text-sm text-muted-foreground">Loading status...</span>
+                <span className="text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">Loading status...</span>
               ) : (
                 <div className="flex items-center gap-2">
                   {getStatusIcon(currentSubmissionStatus)}
@@ -222,8 +222,8 @@ export default function StudentDashboardContent() {
             </div>
 
             {(submission || submissionError || (submissionLoading && !submission)) && (
-              <div className="p-3 bg-muted rounded-md">
-                <p className="text-sm text-muted-foreground">
+              <div className="p-3 bg-[#F4F2F9] dark:bg-[#4A4A4A] rounded-md">
+                <p className="text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">
                   {displayStatusMessage()}
                 </p>
               </div>

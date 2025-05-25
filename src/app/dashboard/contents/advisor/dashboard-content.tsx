@@ -173,13 +173,13 @@ export default function AdvisorDashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 bg-[#F4F2F9] dark:bg-[#2E2E2E]">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="h-10 bg-gray-200 rounded w-full mb-6"></div>
+          <div className="h-8 bg-[#BEBBCF] dark:bg-[#5C5C5C] rounded w-1/4 mb-6"></div>
+          <div className="h-10 bg-[#BEBBCF] dark:bg-[#5C5C5C] rounded w-full mb-6"></div>
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+              <div key={i} className="h-16 bg-[#BEBBCF] dark:bg-[#5C5C5C] rounded"></div>
             ))}
           </div>
         </div>
@@ -188,13 +188,13 @@ export default function AdvisorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F4F2F9] dark:bg-[#2E2E2E]">
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Advisor Dashboard</h2>
+        <h2 className="text-2xl font-bold text-[#2E2E2E] dark:text-[#F4F2F9] mb-6">Advisor Dashboard</h2>
         
         {isListFinalized && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+          <div className="bg-[#E3F6F1] dark:bg-[#2C4A42] border border-[#3BAE8E] dark:border-[#3BAE8E] text-[#3BAE8E] dark:text-[#A5DBCB] px-4 py-3 rounded mb-6">
             List has been finalized and sent to department secretary
           </div>
         )}
@@ -206,47 +206,47 @@ export default function AdvisorDashboard() {
           placeholder="Search students..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full mb-6"
+          className="w-full mb-6 bg-[#FFFFFF] dark:bg-[#3E3E3E] text-[#2E2E2E] dark:text-[#F4F2F9] border-[#DCD9E4] dark:border-[#4A4A4A] focus:ring-2 focus:ring-[#5B3E96] dark:focus:ring-[#937DC7]"
         />
 
         {/* Students Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-[#FFFFFF] dark:bg-[#3E3E3E] rounded-lg shadow overflow-hidden mb-6 border border-[#DCD9E4] dark:border-[#4A4A4A]">
+          <table className="min-w-full divide-y divide-[#DCD9E4] dark:divide-[#4A4A4A]">
+            <thead className="bg-[#F4F2F9] dark:bg-[#2E2E2E]">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentNumber")}>
+                <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentNumber")}>
                   Student Number {sortBy === "studentNumber" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentName")}>
+                <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentName")}>
                   Student Name {sortBy === "studentName" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("gpa")}>
+                <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider cursor-pointer" onClick={() => handleSort("gpa")}>
                   <div className="flex flex-col">
                     <span>GPA (Min: 2.0) {sortBy === "gpa" ? (sortDirection === "asc" ? "↑" : "↓") : ""}</span>
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("status")}>
+                <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider cursor-pointer" onClick={() => handleSort("status")}>
                   Status {sortBy === "status" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-[#FFFFFF] dark:bg-[#3E3E3E] divide-y divide-[#DCD9E4] dark:divide-[#4A4A4A]">
               {sortedStudents.map((student) => (
-                <tr key={student.submissionId} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <tr key={student.submissionId} className="hover:bg-[#F4F2F9] dark:hover:bg-[#4A4A4A]">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
                     {student.studentNumber}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
                     {student.studentName}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
                     {gpaLoadingStates[student.submissionId] ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                        <span className="text-gray-500">Loading...</span>
+                      <div className="flex items-center gap-2 text-[#6D6D6D] dark:text-[#A9A9A9]">
+                        <div className="w-4 h-4 border-2 border-[#DCD9E4] dark:border-[#4A4A4A] border-t-[#6D6D6D] dark:border-t-[#A9A9A9] rounded-full animate-spin"></div>
+                        <span>Loading...</span>
                       </div>
                     ) : student.gpa !== undefined && student.gpa !== null ? (
                       <div className="flex items-center gap-2">

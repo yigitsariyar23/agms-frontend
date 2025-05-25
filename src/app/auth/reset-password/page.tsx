@@ -122,16 +122,16 @@ export default function ResetPasswordPage() {
 
   if (!tokenValid) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-md">
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F2F9] dark:bg-[#2E2E2E] px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md bg-[#FFFFFF] dark:bg-[#3E3E3E] border-[#DCD9E4] dark:border-[#4A4A4A]">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Invalid Session</CardTitle>
-            <CardDescription className="text-center">
+            <CardTitle className="text-2xl font-bold text-center text-[#2E2E2E] dark:text-[#F4F2F9]">Invalid Session</CardTitle>
+            <CardDescription className="text-center text-[#6D6D6D] dark:text-[#A9A9A9]">
               This password reset link is invalid or has expired. Please request a new password reset link.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Button onClick={() => router.push("/auth")}>
+            <Button onClick={() => router.push("/auth")} className="bg-[#5B3E96] hover:bg-[#49317A] dark:bg-[#7A5FB8] dark:hover:bg-[#5B3E96] text-white">
               Return to Login
             </Button>
           </CardContent>
@@ -141,48 +141,50 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F2F9] dark:bg-[#2E2E2E] px-4 py-12 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md bg-[#FFFFFF] dark:bg-[#3E3E3E] border-[#DCD9E4] dark:border-[#4A4A4A]">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold text-[#2E2E2E] dark:text-[#F4F2F9]">Reset Password</CardTitle>
+          <CardDescription className="text-[#6D6D6D] dark:text-[#A9A9A9]">
             Enter your new password below
           </CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" className="mb-4 bg-[#FCE8E8] dark:bg-[#5E2E2E] border-[#E57373] dark:border-[#E57373]">
+              <AlertDescription className="text-[#E57373] dark:text-[#F4C7C7]">{error}</AlertDescription>
             </Alert>
           )}
           {success && (
-            <Alert variant="default" className="mb-4 border-green-500 text-green-700">
+            <Alert variant="default" className="mb-4 border-[#3BAE8E] text-[#3BAE8E] bg-[#E3F6F1] dark:bg-[#2C4A42] dark:text-[#A5DBCB]">
               <AlertDescription>{success}</AlertDescription>
             </Alert>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="new-password" className="text-[#2E2E2E] dark:text-[#F4F2F9]">New Password</Label>
               <Input
                 id="new-password"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
+                className="bg-[#FFFFFF] dark:bg-[#3E3E3E] border-[#DCD9E4] dark:border-[#4A4A4A] text-[#2E2E2E] dark:text-[#F4F2F9] focus:ring-[#5B3E96] dark:focus:ring-[#937DC7]"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Label htmlFor="confirm-password" className="text-[#2E2E2E] dark:text-[#F4F2F9]">Confirm Password</Label>
               <Input
                 id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                className="bg-[#FFFFFF] dark:bg-[#3E3E3E] border-[#DCD9E4] dark:border-[#4A4A4A] text-[#2E2E2E] dark:text-[#F4F2F9] focus:ring-[#5B3E96] dark:focus:ring-[#937DC7]"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Resetting...</> : "Reset Password"}
+            <Button type="submit" className="w-full bg-[#5B3E96] hover:bg-[#49317A] dark:bg-[#7A5FB8] dark:hover:bg-[#5B3E96] text-white disabled:opacity-50" disabled={isLoading}>
+              {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin text-white" />Resetting...</> : "Reset Password"}
             </Button>
           </form>
         </CardContent>

@@ -43,8 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [initialize]);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
-    setLoading(true);
-    setStoreLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
@@ -59,13 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const data = await response.json();
       
-      if (response.ok && data.token) {
+      if (response.status === 200 && data.token) {
         setToken(data.token); // Store token in cookie via auth-store
         setTokenState(data.token);
         setIsAuthenticated(true);
         return { success: true, message: data.message || "Login successful!" };
+      } else if (response.status === 404) {
+        return { success: false, message: data.message || "User not found." };
+      } else if (response.status === 403) {
+        return { success: false, message: data.message || "Invalid credentials." };
       } else {
-        return { success: false, message: data.message || "Login failed" };
+        return { success: false, message: data.message || `Login failed with status: ${response.status}` };
       }
     } catch (networkError) {
       console.error('Network error during login:', networkError);
@@ -73,9 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         success: false, 
         message: "Cannot connect to the server. Please ensure the backend server is running."
       };
-    } finally {
-      setLoading(false);
-      setStoreLoading(false);
     }
   };
 

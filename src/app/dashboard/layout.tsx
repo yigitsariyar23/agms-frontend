@@ -31,7 +31,7 @@ export default function DashboardLayout() {
     }
   }, [isAuthenticated, loading, router])
 
-  if (loading) {    return (      <div className="flex h-screen items-center justify-center" suppressHydrationWarning>        <Loader2 className="h-8 w-8 animate-spin text-primary" />      </div>    )  }
+  if (loading) {    return (      <div className="flex h-screen items-center justify-center bg-[#F4F2F9] dark:bg-[#2E2E2E]" suppressHydrationWarning>        <Loader2 className="h-8 w-8 animate-spin text-[#5B3E96]" />      </div>    )  }
 
   if (!isAuthenticated || !user) {
     return null
@@ -84,17 +84,17 @@ export default function DashboardLayout() {
         )
       default:
         return (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Welcome to AGMS</AlertTitle>
-            <AlertDescription>Your role-specific dashboard is not available. Please contact support.</AlertDescription>
+          <Alert className="m-4 bg-[#E3F6F1] dark:bg-[#2C4A42] border-[#3BAE8E] dark:border-[#3BAE8E]">
+            <Info className="h-4 w-4 text-[#3BAE8E] dark:text-[#A5DBCB]" />
+            <AlertTitle className="text-[#2E2E2E] dark:text-[#F4F2F9]">Welcome to AGMS</AlertTitle>
+            <AlertDescription className="text-[#6D6D6D] dark:text-[#A9A9A9]">Your role-specific dashboard is not available. Please contact support.</AlertDescription>
           </Alert>
         )
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#F4F2F9] dark:bg-[#2E2E2E]">
       <Header />
       <main className="flex-1">
         {renderDashboard()}
