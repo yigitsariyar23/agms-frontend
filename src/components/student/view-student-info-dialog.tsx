@@ -376,7 +376,20 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <FileUploadCard /> 
+                    {initialStudentData?.submissionId ? (
+                      <FileUploadCard 
+                        submissionId={initialStudentData.submissionId}
+                        userRole="STUDENT"
+                        canDeleteFiles={true}
+                      />
+                    ) : (
+                      <div className="text-center py-4">
+                        <Paperclip className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          No submission found. Files will be available after creating a submission.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
