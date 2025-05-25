@@ -4,37 +4,16 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User } from '../types/user';
 import { useUser } from './user-context';
 import { getToken } from '../utils/jwt';
-
-export interface AdvisorStudent {
-  id: string;
-  studentNumber: string;
-  name: string;
-  email: string;
-  department: string;
-  gpa?: number;
-  curriculum?: string;
-  credits?: number;
-  status: "Approved" | "Declined" | "Pending";
-  files?: string[];
-  advisorComment?: string;
-  secretaryComment?: string;
-  deanComment?: string;
-  declineReason?: string;
-  graduationStatus?: string;
-  graduationComment?: string;
-  totalCredits?: number;
-  creditsCompleted?: number;
-  semester?: number;
-}
+import { SubmissionDetails } from '../types/submission-details';
 
 interface AdvisorContextType {
   advisorProfile: User | null;
-  students: AdvisorStudent[];
+  students: SubmissionDetails[];
   loading: boolean;
   fetchAdvisorProfile: () => Promise<void>;
   fetchStudents: () => Promise<void>;
-  approveStudent: (studentId: string) => Promise<void>;
-  declineStudent: (studentId: string, reason: string) => Promise<void>;
+  approveStudent: (submissionId: string) => Promise<void>;
+  declineStudent: (submissionId: string, reason: string) => Promise<void>;
   finalizeList: () => Promise<void>;
   isListFinalized: boolean;
 }
@@ -43,7 +22,7 @@ const AdvisorContext = createContext<AdvisorContextType | undefined>(undefined);
 
 export function AdvisorProvider({ children }: { children: ReactNode }) {
   const [advisorProfile, setAdvisorProfile] = useState<User | null>(null);
-  const [students, setStudents] = useState<AdvisorStudent[]>([]);
+  const [students, setStudents] = useState<SubmissionDetails[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isListFinalized, setIsListFinalized] = useState<boolean>(false);
   const { user } = useUser();
@@ -140,29 +119,27 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const apiData = await response.json();
         
-        // Transform API response to match AdvisorStudent interface
-        const studentsData: AdvisorStudent[] = apiData.map((item: any) => ({
-          id: item.submissionId,
+        // Transform API response to match SubmissionDetails interface
+        const studentsData: SubmissionDetails[] = apiData.map((item: any) => ({
+          submissionId: item.submissionId,
           studentNumber: item.studentNumber,
-          name: item.studentName,
-          email: item.email || '',
-          department: item.department || '',
-          gpa: item.gpa,
-          curriculum: item.curriculum,
-          credits: item.credits,
-          status: item.status === 'PENDING' ? 'Pending' as const : 
-                  item.status === 'APPROVED' ? 'Approved' as const : 
-                  item.status === 'DECLINED' ? 'Declined' as const : 'Pending' as const,
+          studentName: item.studentName,
+          submissionDate: item.submissionDate || new Date().toISOString(), 
+          content: item.content || '', 
+          // email: item.email || '', // Not in SubmissionDetails 
+          // department: item.department || '', // Not in SubmissionDetails
+          // gpa: item.gpa, // Not in SubmissionDetails
+          // curriculum: item.curriculum, // Not in SubmissionDetails
+          // credits: item.credits, // Not in SubmissionDetails
+          status: item.status, // Assuming API returns a compatible status string
           files: item.files || [],
+          advisorListId: item.advisorListId || '', 
           advisorComment: item.advisorComment,
           secretaryComment: item.secretaryComment,
           deanComment: item.deanComment,
           declineReason: item.declineReason,
           graduationStatus: item.graduationStatus,
           graduationComment: item.graduationComment,
-          totalCredits: item.totalCredits,
-          creditsCompleted: item.creditsCompleted,
-          semester: item.semester,
         }));
         
         // Enrich students with detailed GPA data if missing
@@ -181,7 +158,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   };
 
   // Function to enrich students with GPA data from detailed student API
-  const enrichStudentsWithGPA = async (students: AdvisorStudent[], token: string): Promise<AdvisorStudent[]> => {
+  const enrichStudentsWithGPA = async (students: SubmissionDetails[], token: string): Promise<SubmissionDetails[]> => {
     const enrichedStudents = await Promise.all(
       students.map(async (student) => {
         // If GPA is already available and valid, keep it
@@ -219,24 +196,17 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     return enrichedStudents;
   };
 
-  const approveStudent = async (studentId: string): Promise<void> => {
+  const approveStudent = async (submissionId: string): Promise<void> => {
     try {
       const token = getToken();
       if (!token) {
         console.error('No token available');
         return;
       }
-      
-      // Get advisor ID from user context or advisor profile
-      const advisorId = advisorProfile?.userId || user?.userId;
-      
-      if (!advisorId) {
-        console.error('No advisor ID available');
-        return;
-      }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/advisor/${advisorId}/student/${studentId}/approve`, {
-        method: 'POST',
+
+      console.log("approving student", submissionId);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/approve`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -247,28 +217,26 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         setStudents(prev => 
           prev.map(student => 
-            student.id === studentId 
-              ? { ...student, status: 'Approved' as const }
+            student.submissionId === submissionId 
+              ? { ...student, status: 'APPROVED_BY_ADVISOR' } 
               : student
           )
         );
       } else {
-        // Update local state even if API fails (for development)
         setStudents(prev => 
           prev.map(student => 
-            student.id === studentId 
-              ? { ...student, status: 'Approved' as const }
+            student.submissionId === submissionId 
+              ? { ...student, status: 'APPROVED_BY_ADVISOR' } 
               : student
           )
         );
         console.error('Failed to approve student:', await response.text());
       }
     } catch (error) {
-      // Update local state even if API fails (for development)
       setStudents(prev => 
         prev.map(student => 
-          student.id === studentId 
-            ? { ...student, status: 'Approved' as const }
+          student.submissionId === submissionId 
+            ? { ...student, status: 'APPROVED_BY_ADVISOR' } 
             : student
         )
       );
@@ -276,7 +244,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const declineStudent = async (studentId: string, reason: string): Promise<void> => {
+  const declineStudent = async (submissionId: string, reason: string): Promise<void> => {
     try {
       const token = getToken();
       if (!token) {
@@ -284,7 +252,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // Get advisor ID from user context or advisor profile
       const advisorId = advisorProfile?.userId || user?.userId;
       
       if (!advisorId) {
@@ -292,41 +259,38 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/advisor/${advisorId}/student/${studentId}/decline`, {
-        method: 'POST',
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}/reject?rejectionReason=${reason}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
-        body: JSON.stringify({ reason }),
       });
 
       if (response.ok) {
         setStudents(prev => 
           prev.map(student => 
-            student.id === studentId 
-              ? { ...student, status: 'Declined' as const, declineReason: reason }
+            student.submissionId === submissionId 
+              ? { ...student, status: 'REJECTED_BY_ADVISOR', declineReason: reason } 
               : student
           )
         );
       } else {
-        // Update local state even if API fails (for development)
         setStudents(prev => 
           prev.map(student => 
-            student.id === studentId 
-              ? { ...student, status: 'Declined' as const, declineReason: reason }
+            student.submissionId === submissionId
+              ? { ...student, status: 'REJECTED_BY_ADVISOR', declineReason: reason } 
               : student
           )
         );
         console.error('Failed to decline student:', await response.text());
       }
     } catch (error) {
-      // Update local state even if API fails (for development)
       setStudents(prev => 
         prev.map(student => 
-          student.id === studentId 
-            ? { ...student, status: 'Declined' as const, declineReason: reason }
+          student.submissionId === submissionId 
+            ? { ...student, status: 'REJECTED_BY_ADVISOR', declineReason: reason } 
             : student
         )
       );
@@ -342,7 +306,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // Get advisor ID from user context or advisor profile
       const advisorId = advisorProfile?.userId || user?.userId;
       
       if (!advisorId) {
@@ -362,12 +325,10 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         setIsListFinalized(true);
       } else {
-        // Update local state even if API fails (for development)
         setIsListFinalized(true);
         console.error('Failed to finalize list:', await response.text());
       }
     } catch (error) {
-      // Update local state even if API fails (for development)
       setIsListFinalized(true);
       console.error('Error finalizing list:', error);
     }
@@ -382,7 +343,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  // Fetch students after advisor profile has been loaded
   useEffect(() => {
     if (advisorProfile && user && (user.role === 'ADVISOR' || user.role === 'ROLE_ADVISOR')) {
       fetchStudents();

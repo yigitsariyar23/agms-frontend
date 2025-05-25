@@ -7,57 +7,95 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, Clock, XCircle, User, GraduationCap } from "lucide-react"
 import { ViewStudentInfoDialog } from "@/components/student/view-student-info-dialog"
-import { GraduationRequestStatus } from "@/lib/types/graduation-status"
+import { SubmissionDetails } from "@/lib/types/submission-details"
 import { useStudent } from "@/lib/contexts/student-context"
+import { useSubmission } from "@/lib/contexts/submission-context"
 import { useGraduation } from "@/lib/contexts/graduation-context"
 
 export default function StudentDashboardContent() {
   const {
-    graduationStatus,
     loading: graduationLoading,
     alert: graduationAlert,
     requestGraduation,
     clearAlert
   } = useGraduation()
+
+  const { 
+    submission, 
+    loading: submissionLoading, 
+    error: submissionError, 
+    fetchSubmissionByStudentNumber,
+    clearSubmission
+  } = useSubmission()
+
   const [isStudentInfoDialogOpen, setIsStudentInfoDialogOpen] = useState(false)
   const { studentProfile, hasCompletedCurriculum, getCurriculumStatus, loading: studentLoading } = useStudent()
 
-  const getStatusIcon = (status: GraduationRequestStatus) => {
+  useEffect(() => {
+    if (studentProfile?.studentNumber && fetchSubmissionByStudentNumber) {
+      fetchSubmissionByStudentNumber(studentProfile.studentNumber);
+    }
+    // Clear submission data if student logs out or changes
+    return () => {
+      if (clearSubmission) clearSubmission();
+    }
+  }, [studentProfile?.studentNumber, fetchSubmissionByStudentNumber, clearSubmission]);
+
+  const getStatusIcon = (status: SubmissionDetails['status'] | undefined) => {
     switch (status) {
-      case "APPROVED":
+      case "APPROVED_BY_ADVISOR":
+      case "APPROVED_BY_DEPT":
+      case "FINAL_APPROVED":
         return <CheckCircle className="w-5 h-5 text-green-500" />
       case "PENDING":
         return <Clock className="w-5 h-5 text-yellow-500" />
-      case "REJECTED":
+      case "REJECTED_BY_ADVISOR":
+      case "REJECTED_BY_DEPT":
+      case "FINAL_REJECTED":
         return <XCircle className="w-5 h-5 text-red-500" />
+      case "NOT_REQUESTED":
       default:
         return <GraduationCap className="w-5 h-5 text-gray-500" />
     }
   }
 
-  const getStatusText = (status: GraduationRequestStatus) => {
+  const getStatusText = (status: SubmissionDetails['status'] | undefined) => {
+    if (submissionLoading && !submission) return "Loading Status...";
     switch (status) {
-      case "NOT_SUBMITTED":
-        return "Not Requested"
       case "PENDING":
         return "Under Review"
-      case "APPROVED":
-        return "Approved"
-      case "REJECTED":
-        return "Rejected"
+      case "APPROVED_BY_ADVISOR":
+        return "Approved by Advisor"
+      case "APPROVED_BY_DEPT":
+        return "Approved by Department"
+      case "FINAL_APPROVED":
+        return "Graduation Approved"
+      case "REJECTED_BY_ADVISOR":
+        return "Declined by Advisor"
+      case "REJECTED_BY_DEPT":
+        return "Rejected by Department"
+      case "FINAL_REJECTED":
+        return "Rejected by Faculty"
+      case "NOT_REQUESTED":
       default:
-        return "Unknown"
+        return "Not Requested"
     }
   }
 
-  const getStatusBadgeVariant = (status: GraduationRequestStatus) => {
+  const getStatusBadgeVariant = (status: SubmissionDetails['status'] | undefined) => {
+    if (submissionLoading && !submission) return "outline" as const;
     switch (status) {
-      case "APPROVED":
+      case "APPROVED_BY_ADVISOR":
+      case "APPROVED_BY_DEPT":
+      case "FINAL_APPROVED":
         return "default" as const
       case "PENDING":
         return "secondary" as const
-      case "REJECTED":
+      case "REJECTED_BY_ADVISOR":
+      case "REJECTED_BY_DEPT":
+      case "FINAL_REJECTED":
         return "destructive" as const
+      case "NOT_REQUESTED":
       default:
         return "outline" as const
     }
@@ -82,6 +120,41 @@ export default function StudentDashboardContent() {
     );
   }
 
+  const currentSubmissionStatus = submission?.status;
+  console.log(currentSubmissionStatus);
+  const displayStatusMessage = () => {
+    if (!submission && !submissionLoading && !submissionError) return "No submission information available.";
+    if (submissionError) return null; // Error handled by separate Alert
+    if (submissionLoading && !submission) return "Loading submission details...";
+    if (!currentSubmissionStatus) return "Status not available yet.";
+
+    if (["REJECTED_BY_ADVISOR", "REJECTED_BY_DEPT", "FINAL_REJECTED"].includes(currentSubmissionStatus)) {
+      return submission.content || "Your application was not approved. Please check comments for details.";
+    }
+    if (currentSubmissionStatus === "FINAL_APPROVED") {
+      return submission.content || "Congratulations! Your graduation has been approved.";
+    }
+    if (submission.deanComment) return `Dean: ${submission.deanComment}`;
+    if (submission.secretaryComment) return `Secretary: ${submission.secretaryComment}`;
+    if (submission.advisorComment) return `Advisor: ${submission.advisorComment}`;
+    if (submission.content) return submission.content;
+    return "Further information will be displayed here.";
+  };
+  
+  const canRequestGraduation = !submission || 
+                               currentSubmissionStatus === "NOT_REQUESTED" || 
+                               currentSubmissionStatus === "REJECTED_BY_ADVISOR" ||
+                               currentSubmissionStatus === "REJECTED_BY_DEPT" ||
+                               currentSubmissionStatus === "FINAL_REJECTED";
+
+  const requestButtonText = () => {
+    if (graduationLoading && canRequestGraduation) return "Submitting...";
+    if (currentSubmissionStatus === "REJECTED_BY_ADVISOR" || currentSubmissionStatus === "REJECTED_BY_DEPT" || currentSubmissionStatus === "FINAL_REJECTED") {
+      return "Request Graduation Again";
+    }
+    return "Request Graduation";
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -101,6 +174,16 @@ export default function StudentDashboardContent() {
           </AlertDescription>
         </Alert>
       )}
+      {submissionError && (
+         <Alert variant="destructive">
+           <XCircle className="h-4 w-4" />
+           <AlertDescription>
+             <strong>Error Fetching Submission</strong>
+             <br />
+             {submissionError}
+           </AlertDescription>
+         </Alert>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Graduation Status Card */}
@@ -117,12 +200,16 @@ export default function StudentDashboardContent() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Current Status:</span>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(graduationStatus.status)}
-                <Badge variant={getStatusBadgeVariant(graduationStatus.status)}>
-                  {getStatusText(graduationStatus.status)}
-                </Badge>
-              </div>
+              {(submissionLoading && !submission) ? (
+                <span className="text-sm text-muted-foreground">Loading status...</span>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(currentSubmissionStatus)}
+                  <Badge variant={getStatusBadgeVariant(currentSubmissionStatus)}>
+                    {getStatusText(currentSubmissionStatus)}
+                  </Badge>
+                </div>
+              )}
             </div>
 
             {/* Curriculum Completion Status */}
@@ -142,40 +229,28 @@ export default function StudentDashboardContent() {
               </div>
             )}
 
-            {graduationStatus.message && (
+            {(submission || submissionError || (submissionLoading && !submission)) && (
               <div className="p-3 bg-muted rounded-md">
                 <p className="text-sm text-muted-foreground">
-                  {graduationStatus.message}
+                  {displayStatusMessage()}
                 </p>
               </div>
             )}
 
             <div className="flex gap-2 flex-col sm:flex-row">
-              {graduationStatus.status === "NOT_SUBMITTED" && (
+              {canRequestGraduation && (
                 <>
                   <Button 
-                    onClick={requestGraduation}
+                    onClick={async () => {
+                      await requestGraduation();
+                      if (studentProfile?.studentNumber && fetchSubmissionByStudentNumber) {
+                        fetchSubmissionByStudentNumber(studentProfile.studentNumber);
+                      }
+                    }}
                     className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium flex-grow"
-                    disabled={hasCompletedCurriculum === false || graduationLoading}
+                    disabled={hasCompletedCurriculum === false || graduationLoading || submissionLoading}
                   >
-                    {graduationLoading ? "Submitting..." : "Request Graduation"}
-                  </Button>
-                  {hasCompletedCurriculum === false && (
-                    <p className="text-xs text-muted-foreground mt-1 sm:mt-0 sm:ml-2 flex-shrink-0">
-                      Complete curriculum to request
-                    </p>
-                  )}
-                </>
-              )}
-              
-              {graduationStatus.status === "REJECTED" && (
-                <>
-                  <Button 
-                    onClick={requestGraduation}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium flex-grow"
-                    disabled={hasCompletedCurriculum === false || graduationLoading}
-                  >
-                    {graduationLoading ? "Submitting..." : "Request Graduation Again"}
+                    {requestButtonText()}
                   </Button>
                   {hasCompletedCurriculum === false && (
                     <p className="text-xs text-muted-foreground mt-1 sm:mt-0 sm:ml-2 flex-shrink-0">

@@ -15,14 +15,15 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { useAdvisor, AdvisorStudent } from "@/lib/contexts/advisor-context";
+import { useAdvisor } from "@/lib/contexts/advisor-context";
+import { SubmissionDetails } from "@/lib/types/submission-details";
 import { useUser } from "@/lib/contexts/user-context";
 import { ViewStudentInfoDialog } from "@/components/student/view-student-info-dialog";
 import { CheckCircle, XCircle } from "lucide-react";
 
 interface ModalState {
   type: "accept" | "decline" | "info" | "finalize";
-  student?: AdvisorStudent;
+  student?: SubmissionDetails;
 }
 
 export default function AdvisorDashboard() {
@@ -39,11 +40,11 @@ export default function AdvisorDashboard() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<ModalState | null>(null);
   const [declineReason, setDeclineReason] = useState("");
-  const [sortBy, setSortBy] = useState<keyof AdvisorStudent | null>("studentNumber");
+  const [sortBy, setSortBy] = useState<keyof SubmissionDetails | null>("studentNumber");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [gpaLoadingStates, setGpaLoadingStates] = useState<Record<string, boolean>>({});
 
-  const handleSort = (field: keyof AdvisorStudent) => {
+  const handleSort = (field: keyof SubmissionDetails) => {
     if (sortBy === field) {
       setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
     } else {
@@ -55,8 +56,8 @@ export default function AdvisorDashboard() {
   // Filter students based on search
   const filteredStudents = students.filter(
     (student) =>
-      student.name.toLowerCase().includes(search.toLowerCase()) ||
-      student.studentNumber.toString().includes(search)
+      (student.studentName?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (student.studentNumber || "").includes(search)
   );
 
   // Sort students based on current sort field and direction
@@ -83,7 +84,7 @@ export default function AdvisorDashboard() {
 
   const handleAccept = async () => {
     if (modal && modal.student) {
-      await approveStudent(modal.student.id);
+      await approveStudent(modal.student.submissionId);
       toast.success("Student approved successfully");
       setModal(null);
     }
@@ -91,7 +92,7 @@ export default function AdvisorDashboard() {
 
   const handleDecline = async () => {
     if (modal && modal.student && declineReason.trim()) {
-      await declineStudent(modal.student.id, declineReason);
+      await declineStudent(modal.student.submissionId, declineReason);
       toast.success("Student declined");
       setDeclineReason("");
       setModal(null);
@@ -99,7 +100,7 @@ export default function AdvisorDashboard() {
   };
 
   const handleFinalize = () => {
-    const hasPendingStudents = students.some((s) => s.status === "Pending");
+    const hasPendingStudents = students.some((s) => s.status === "PENDING");
     if (hasPendingStudents) {
       toast.error(
         "All students must be either approved or declined before finalizing"
@@ -115,21 +116,29 @@ export default function AdvisorDashboard() {
     setModal(null);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: SubmissionDetails['status']) => {
     switch (status) {
-      case "Approved":
+      case "APPROVED_BY_ADVISOR":
+      case "APPROVED_BY_DEPT":
+      case "APPROVED_BY_DEAN":
+      case "FINAL_APPROVED":
         return "text-green-600";
-      case "Declined":
+      case "REJECTED_BY_ADVISOR":
+      case "REJECTED_BY_DEPT":
+      case "REJECTED_BY_DEAN":
+      case "FINAL_REJECTED":
         return "text-red-600";
-      case "Pending":
+      case "PENDING":
         return "text-yellow-600";
+      case "NOT_REQUESTED":
+        return "text-gray-400";
       default:
         return "text-gray-600";
     }
   };
 
-  const refreshGPA = async (student: AdvisorStudent) => {
-    setGpaLoadingStates(prev => ({ ...prev, [student.id]: true }));
+  const refreshGPA = async (student: SubmissionDetails) => {
+    setGpaLoadingStates(prev => ({ ...prev, [student.submissionId]: true }));
     
     try {
       const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
@@ -158,7 +167,7 @@ export default function AdvisorDashboard() {
     } catch (error) {
       console.error('Error refreshing GPA data:', error);
     } finally {
-      setGpaLoadingStates(prev => ({ ...prev, [student.id]: false }));
+      setGpaLoadingStates(prev => ({ ...prev, [student.submissionId]: false }));
     }
   };
 
@@ -208,8 +217,8 @@ export default function AdvisorDashboard() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentNumber")}>
                   Student Number {sortBy === "studentNumber" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("name")}>
-                  Student Name {sortBy === "name" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("studentName")}>
+                  Student Name {sortBy === "studentName" ? (sortDirection === "asc" ? "↑" : "↓") : ""}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort("gpa")}>
                   <div className="flex flex-col">
@@ -226,15 +235,15 @@ export default function AdvisorDashboard() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedStudents.map((student) => (
-                <tr key={student.id} className="hover:bg-gray-50">
+                <tr key={student.submissionId} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {student.studentNumber}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {student.name}
+                    {student.studentName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {gpaLoadingStates[student.id] ? (
+                    {gpaLoadingStates[student.submissionId] ? (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
                         <span className="text-gray-500">Loading...</span>
@@ -266,7 +275,7 @@ export default function AdvisorDashboard() {
                           variant="ghost"
                           className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                           onClick={() => refreshGPA(student)}
-                          disabled={gpaLoadingStates[student.id]}
+                          disabled={gpaLoadingStates[student.submissionId]}
                         >
                           Refresh
                         </Button>
@@ -281,11 +290,11 @@ export default function AdvisorDashboard() {
                       <Button
                         size="sm"
                         className={
-                          student.status !== "Pending"
+                          student.status !== "PENDING"
                             ? "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
                             : "bg-gray-800 hover:bg-gray-900"
                         }
-                        disabled={student.status !== "Pending" || isListFinalized}
+                        disabled={student.status !== "PENDING" || isListFinalized}
                         onClick={() =>
                           setModal({ type: "accept", student })
                         }
@@ -296,11 +305,11 @@ export default function AdvisorDashboard() {
                         size="sm"
                         variant="destructive"
                         className={
-                          student.status !== "Pending"
+                          student.status !== "PENDING"
                             ? "bg-red-300 cursor-not-allowed hover:bg-red-300"
                             : ""
                         }
-                        disabled={student.status !== "Pending" || isListFinalized}
+                        disabled={student.status !== "PENDING" || isListFinalized}
                         onClick={() =>
                           setModal({ type: "decline", student })
                         }
@@ -333,103 +342,99 @@ export default function AdvisorDashboard() {
         </div>
 
         {/* Finalize Button */}
-        <div className="flex justify-center">
-          <Button
-            className="px-8 py-2 bg-gray-800 hover:bg-gray-900"
+        {!isListFinalized && (
+          <Button 
             onClick={handleFinalize}
-            disabled={isListFinalized}
+            className="w-full bg-gray-800 hover:bg-gray-900"
           >
-            {isListFinalized ? "List Finalized" : "Finalize List"}
+            Finalize List
           </Button>
-        </div>
+        )}
       </main>
 
-      {/* Accept Modal */}
-      <Dialog
-        open={!!modal && modal.type === "accept"}
-        onOpenChange={(open) => !open && setModal(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve Student</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to approve {modal?.student?.name}?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={handleAccept}>Yes, Approve</Button>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modals */}
+      {modal && modal.type === "accept" && modal.student && (
+        <Dialog open onOpenChange={() => setModal(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Approval</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to approve {modal.student.studentName}?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={handleAccept}>Approve</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      {/* Decline Modal */}
-      <Dialog
-        open={!!modal && modal.type === "decline"}
-        onOpenChange={(open) => !open && setModal(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Decline Student</DialogTitle>
-            <DialogDescription>
-              Please provide a reason for declining {modal?.student?.name}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mb-4">
-            <Label htmlFor="decline-reason">Reason</Label>
-            <Textarea
-              id="decline-reason"
-              value={declineReason}
-              onChange={(e) => setDeclineReason(e.target.value)}
-              className="mt-2"
-              placeholder="Enter reason..."
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={handleDecline} disabled={!declineReason.trim()}>
-              Submit
-            </Button>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {modal && modal.type === "decline" && modal.student && (
+        <Dialog open onOpenChange={() => setModal(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Decline Student</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for declining {modal.student.studentName}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Label htmlFor="declineReason">Reason for Decline</Label>
+              <Textarea
+                id="declineReason"
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder="Enter reason here..."
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button 
+                onClick={handleDecline} 
+                disabled={!declineReason.trim()} 
+                variant="destructive"
+              >
+                Decline Student
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      {/* Student Info Modal */}
       {modal && modal.type === "info" && modal.student && (
         <ViewStudentInfoDialog 
-          open={true} 
-          onOpenChange={(open) => !open && setModal(null)}
+          open={true}
+          onOpenChange={() => setModal(null)}
           studentNumber={modal.student.studentNumber}
           initialStudentData={modal.student}
         />
       )}
 
-      {/* Finalize Modal */}
-      <Dialog
-        open={!!modal && modal.type === "finalize"}
-        onOpenChange={(open) => !open && setModal(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Finalize Student List</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to finalize this list? Once finalized, it
-              will be sent to the department secretary for review. This action
-              cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={confirmFinalize}>Yes, Finalize List</Button>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {modal && modal.type === "finalize" && (
+        <Dialog open onOpenChange={() => setModal(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Finalization</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to finalize the list? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={confirmFinalize} className="bg-gray-800 hover:bg-gray-900">
+                Finalize List
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

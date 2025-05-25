@@ -15,6 +15,7 @@ import StudentAffairsDashboard from "./contents/student_affairs/dashboard-conten
 import Header from "@/components/shared/header"
 import { useUser } from "@/lib/contexts/user-context"
 import { GraduationProvider } from "@/lib/contexts/graduation-context"
+import { SubmissionProvider } from "@/lib/contexts/submission-context"
 import ErrorBoundary from "@/components/ErrorBoundary"
 
 export default function DashboardLayout() {
@@ -47,7 +48,9 @@ export default function DashboardLayout() {
         return (
           <ErrorBoundary>
             <GraduationProvider>
-              <StudentDashboard />
+              <SubmissionProvider>
+                <StudentDashboard />
+              </SubmissionProvider>
             </GraduationProvider>
           </ErrorBoundary>
         )

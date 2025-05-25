@@ -30,13 +30,13 @@ import { getToken } from "@/lib/utils/jwt"
 import { StudentData } from "@/lib/types/student-data" 
 import { AdvisorDetails } from "@/lib/types/advisor-details"
 import FileUploadCard from "@/components/student/file-upload-card"
-import { AdvisorStudent } from "@/lib/contexts/advisor-context" 
+import { SubmissionDetails } from "@/lib/types/submission-details"
 
 interface ViewStudentInfoDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   studentNumber: string 
-  initialStudentData?: AdvisorStudent 
+  initialStudentData?: SubmissionDetails
 }
 
 function useStudentDetailsByNumber(studentNumber?: string, open?: boolean) {
@@ -92,8 +92,6 @@ function useStudentDetailsByNumber(studentNumber?: string, open?: boolean) {
 export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initialStudentData }: ViewStudentInfoDialogProps) {
   const { studentData, loading } = useStudentDetailsByNumber(studentNumber, open)
   const [showCourses, setShowCourses] = useState(false)
-
-  console.log(studentData)
   const hasCompletedCurriculum = studentData?.curriculumCompleted ?? false
 
   const getAdvisorName = () => {
@@ -112,8 +110,8 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
   }
 
   const getTotalCredits = () => {
-    if (loading && !(initialStudentData?.credits || initialStudentData?.totalCredits)) return 0;
-    return studentData?.totalCredit ?? initialStudentData?.credits ?? initialStudentData?.totalCredits ?? 0
+    if (loading && !(initialStudentData?.creditsCompleted || initialStudentData?.totalCredits)) return 0;
+    return studentData?.totalCredit ?? initialStudentData?.creditsCompleted ?? initialStudentData?.totalCredits ?? 0
   }
 
   const getCourses = () => {
@@ -131,10 +129,10 @@ export function ViewStudentInfoDialog({ open, onOpenChange, studentNumber, initi
 
 
   const getStudentName = () => {
-    if (loading && !initialStudentData?.name) return 'Loading...';
-    if (initialStudentData?.name && !studentData) return initialStudentData.name;
+    if (loading && !initialStudentData?.studentName) return 'Loading...';
+    if (initialStudentData?.studentName && !studentData) return initialStudentData.studentName;
     if (studentData?.firstName && studentData?.lastName) return `${studentData.firstName} ${studentData.lastName}`;
-    return initialStudentData?.name || studentNumber || 'Not available' 
+    return initialStudentData?.studentName || studentNumber || 'Not available' 
   }
 
   const getStudentEmail = () => {
