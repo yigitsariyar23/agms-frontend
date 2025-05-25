@@ -33,7 +33,7 @@ const Footer = () => {
 
     return (
         <>
-            <footer className="w-full absolute bottom-0 bg-transparent text-gray-400 pt-2 pb-2 px-4 z-50">
+            <footer className=" w-full bottom-0 bg-transparent text-gray-400 pt-2 pb-2 px-4 z-50">
                 <p className="text-sm text-center">
                     Automated Graduation Management System © {currentYear}{' '}
                     <button
