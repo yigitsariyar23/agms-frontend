@@ -313,7 +313,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/advisor/${advisorId}/finalize`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/finalize-my-list`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

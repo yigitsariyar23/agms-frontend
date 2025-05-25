@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +47,17 @@ export default function StudentAffairsDashboard() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [gpaLoadingStates, setGpaLoadingStates] = useState<Record<string, boolean>>({});
   const [startingGraduation, setStartingGraduation] = useState(false);
+  const [checkingExistingGraduation, setCheckingExistingGraduation] = useState(false);
+  const [existingGraduationStatus, setExistingGraduationStatus] = useState<{
+    exists: boolean;
+    status?: string;
+    term?: string;
+  } | null>(null);
+
+  // Check for existing graduation process on component mount
+  useEffect(() => {
+    checkExistingGraduation();
+  }, []);
 
   const handleSort = (field: keyof SubmissionDetails) => {
     if (sortBy === field) {
@@ -115,7 +126,7 @@ export default function StudentAffairsDashboard() {
     if (!canFinalize()) {
       const allDeanListsFinalized = deanLists.length > 0 && deanLists.every(dean => dean.isFinalized);
       const hasApprovedOrRejectedStudents = students.some(student => 
-        student.status === 'GRADUATION_APPROVED' || 
+        student.status === 'FINAL_APPROVED' || 
         student.status === 'STUDENT_AFFAIRS_REJECTED' ||
         student.status === 'APPROVED_BY_DEAN' ||
         student.status === 'REJECTED_BY_DEAN'
@@ -140,18 +151,22 @@ export default function StudentAffairsDashboard() {
     setModal(null);
   };
 
-  const startGraduationProcess = async () => {
-    setStartingGraduation(true);
+  const checkExistingGraduation = async () => {
+    setCheckingExistingGraduation(true);
     
     try {
-      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('jwt_token='))
+        ?.split('=')[1];
+        
       if (!token) {
         toast.error('Authentication required');
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/regular-graduation/start`, {
-        method: 'POST',
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/regular-graduation/track?term=${new Date().getFullYear().toString()}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -161,12 +176,139 @@ export default function StudentAffairsDashboard() {
 
       if (response.ok) {
         const result = await response.json();
-        toast.success('Graduation process started successfully');
-        // Refresh the page to show new submissions
-        window.location.reload();
+        if(result.started === true) {
+          setExistingGraduationStatus({
+            exists: true,
+            status: result.status,
+            term: result.term
+          });
+        } else {
+          setExistingGraduationStatus({
+            exists: false
+          });
+        }
+      } else if (response.status === 404) {
+        // No existing graduation process
+        setExistingGraduationStatus({
+          exists: false
+        });
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || 'Failed to start graduation process');
+        let errorMessage = 'Failed to check existing graduation process';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          // If response is not JSON, try to get text
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+          } catch (textError) {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          }
+        }
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error checking existing graduation process:', error);
+      toast.error('Failed to check existing graduation process');
+    } finally {
+      setCheckingExistingGraduation(false);
+    }
+  };
+
+  const startGraduationProcess = async () => {
+    // First check if there's already an existing graduation process
+    setStartingGraduation(true);
+    
+    try {
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('jwt_token='))
+        ?.split('=')[1];
+        
+      if (!token) {
+        toast.error('Authentication required');
+        return;
+      }
+
+      // Check for existing graduation process first
+      const trackResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/regular-graduation/track?term=${new Date().getFullYear().toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      if (trackResponse.ok) {
+        const existingData = await trackResponse.json();
+        if(existingData.started === true) {
+          setExistingGraduationStatus({
+            exists: true,
+            status: existingData.status,
+            term: existingData.term
+          });
+          toast.error(`A graduation process for term ${existingData.term} is already ${existingData.status}. Cannot start a new process.`);
+          return;
+        } else {
+          // No existing process started, can proceed
+          setExistingGraduationStatus({
+            exists: false
+          });
+        }
+      } else if (trackResponse.status !== 404) {
+        // Some other error occurred while checking
+        let errorMessage = 'Failed to check existing graduation process';
+        try {
+          const errorData = await trackResponse.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          // If response is not JSON, try to get text
+          try {
+            const errorText = await trackResponse.text();
+            errorMessage = errorText || `HTTP ${trackResponse.status}: ${trackResponse.statusText}`;
+          } catch (textError) {
+            errorMessage = `HTTP ${trackResponse.status}: ${trackResponse.statusText}`;
+          }
+        }
+        toast.error(errorMessage);
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/regular-graduation/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          term: new Date().getFullYear().toString(),
+        }),
+        credentials: 'include',
+      });
+
+      console.log(response);
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Graduation process started successfully');
+        // Refresh the page data or refetch students
+        window.location.reload(); // Simple approach, you might want to refetch data instead
+      } else {
+        let errorMessage = 'Failed to start graduation process';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          // If response is not JSON, try to get text
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+          } catch (textError) {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          }
+        }
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error starting graduation process:', error);
@@ -181,7 +323,7 @@ export default function StudentAffairsDashboard() {
       case "APPROVED_BY_ADVISOR":
       case "APPROVED_BY_DEPT":
       case "APPROVED_BY_DEAN":
-      case "GRADUATION_APPROVED":
+      case "FINAL_APPROVED":
         return "text-green-600";
       case "REJECTED_BY_ADVISOR":
       case "REJECTED_BY_DEPT":
@@ -201,7 +343,10 @@ export default function StudentAffairsDashboard() {
     setGpaLoadingStates(prev => ({ ...prev, [student.submissionId]: true }));
     
     try {
-      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('jwt_token='))
+        ?.split('=')[1];
       if (!token) {
         console.error('No token available');
         return;
@@ -217,10 +362,8 @@ export default function StudentAffairsDashboard() {
       });
 
       if (response.ok) {
-        const detailedData = await response.json();
-        // Update the specific student's GPA in the context
-        // Note: This would ideally be done through the context, but for simplicity we'll trigger a refetch
-        window.location.reload(); // Temporary solution - ideally we'd update the context state
+        const result = await response.json();
+        console.log(result);
       } else {
         console.error('Failed to refresh GPA data');
       }
@@ -268,18 +411,53 @@ export default function StudentAffairsDashboard() {
           className="w-full mb-6 bg-[#FFFFFF] dark:bg-[#3E3E3E] text-[#2E2E2E] dark:text-[#F4F2F9] border-[#DCD9E4] dark:border-[#4A4A4A] focus:ring-2 focus:ring-[#5B3E96] dark:focus:ring-[#937DC7]"
         />
 
+        {/* Existing Graduation Process Status */}
+        {existingGraduationStatus?.exists && (
+          <div className="bg-[#FFF3CD] dark:bg-[#4A3F2A] border border-[#F0AD4E] dark:border-[#F0AD4E] text-[#8A6D3B] dark:text-[#F0AD4E] px-4 py-3 rounded mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>Existing Graduation Process Found</strong>
+                <p className="text-sm mt-1">
+                  Term: {existingGraduationStatus.term} | Status: {existingGraduationStatus.status}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={checkExistingGraduation}
+                disabled={checkingExistingGraduation}
+                className="border-[#F0AD4E] text-[#8A6D3B] hover:bg-[#F0AD4E] hover:text-white"
+              >
+                {checkingExistingGraduation ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    Checking...
+                  </div>
+                ) : (
+                  'Refresh Status'
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Start Graduation Process Button */}
-        {!isListFinalized && students.length === 0 && (
+        {!isListFinalized && students.length === 0 && !existingGraduationStatus?.exists && (
           <div className="mb-6">
             <Button 
               onClick={startGraduationProcess}
-              disabled={startingGraduation}
+              disabled={startingGraduation || checkingExistingGraduation}
               className="bg-[#5B3E96] hover:bg-[#4A3278] text-white"
             >
               {startingGraduation ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Starting Graduation Process...
+                </div>
+              ) : checkingExistingGraduation ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Checking for existing process...
                 </div>
               ) : (
                 'Start Graduation Process'
@@ -288,6 +466,13 @@ export default function StudentAffairsDashboard() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               This will automatically create submissions for all eligible students
             </p>
+          </div>
+        )}
+
+        {/* Message when checking for existing graduation */}
+        {checkingExistingGraduation && existingGraduationStatus === null && (
+          <div className="bg-[#E3F6F1] dark:bg-[#2C4A42] border border-[#3BAE8E] dark:border-[#3BAE8E] text-[#3BAE8E] dark:text-[#A5DBCB] px-4 py-3 rounded mb-6">
+            Checking for existing graduation processes...
           </div>
         )}
 
@@ -460,9 +645,6 @@ export default function StudentAffairsDashboard() {
                     Office
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
-                    Students
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
@@ -481,26 +663,6 @@ export default function StudentAffairsDashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
                       {dean.office}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-semibold">
-                            Total: {dean.totalStudents}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
-                            ✓ {dean.approvedStudents}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
-                            ✗ {dean.rejectedStudents}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold">
-                            ⏳ {dean.pendingStudents}
-                          </span>
-                        </div>
-                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {dean.isFinalized ? (
@@ -527,7 +689,7 @@ export default function StudentAffairsDashboard() {
                 ))}
                 {filteredDeanLists.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                       {search ? "No deans found matching your search." : "No dean lists found."}
                     </td>
                   </tr>
@@ -558,12 +720,12 @@ export default function StudentAffairsDashboard() {
                   <p>• All dean lists must be finalized first</p>
                 ) : null}
                 {students.some(student => 
-                  student.status === 'GRADUATION_APPROVED' || 
+                  student.status === 'FINAL_APPROVED' || 
                   student.status === 'STUDENT_AFFAIRS_REJECTED' ||
                   student.status === 'APPROVED_BY_DEAN' ||
                   student.status === 'REJECTED_BY_DEAN'
                 ) ? (
-                  <p>• No students should have approved or rejected status</p>
+                  <p>• All students should be approved or rejected</p>
                 ) : null}
               </div>
             )}

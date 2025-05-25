@@ -46,7 +46,7 @@ export default function StudentDashboardContent() {
       case "APPROVED_BY_ADVISOR":
       case "APPROVED_BY_DEPT":
       case "APPROVED_BY_DEAN":
-      case "GRADUATION_APPROVED":
+      case "FINAL_APPROVED":
         return <CheckCircle className="w-5 h-5 text-green-500" />
       case "PENDING":
         return <Clock className="w-5 h-5 text-yellow-500" />
@@ -72,7 +72,7 @@ export default function StudentDashboardContent() {
         return "Approved by Department"
       case "APPROVED_BY_DEAN":
         return "Approved by Dean"
-      case "GRADUATION_APPROVED":
+      case "FINAL_APPROVED":
         return "Graduation Approved"
       case "REJECTED_BY_ADVISOR":
         return "Declined by Advisor"
@@ -94,7 +94,7 @@ export default function StudentDashboardContent() {
       case "APPROVED_BY_ADVISOR":
       case "APPROVED_BY_DEPT":
       case "APPROVED_BY_DEAN":
-      case "GRADUATION_APPROVED":
+      case "FINAL_APPROVED":
         return "default" as const
       case "PENDING":
         return "secondary" as const
@@ -139,7 +139,7 @@ export default function StudentDashboardContent() {
     if (["REJECTED_BY_ADVISOR", "REJECTED_BY_DEPT", "REJECTED_BY_DEAN", "STUDENT_AFFAIRS_REJECTED"].includes(currentSubmissionStatus)) {
       return submission.content || "Your application was not approved. Please check comments for details.";
     }
-    if (currentSubmissionStatus === "GRADUATION_APPROVED") {
+    if (currentSubmissionStatus === "FINAL_APPROVED") {
       return submission.content || "Congratulations! Your graduation has been approved.";
     }
     if (submission.deanComment) return `Dean: ${submission.deanComment}`;

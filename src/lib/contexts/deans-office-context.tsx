@@ -305,18 +305,32 @@ export function DeansOfficeProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchDepartmentLists = async (): Promise<void> => {
-    if (!user) return;
+    if (!user) {
+      console.log('fetchDepartmentLists: No user available');
+      return;
+    }
     
+    console.log('fetchDepartmentLists: Starting fetch for user:', user.role);
     setDepartmentListsLoading(true);
     
     try {
       const token = getToken();
       if (!token) {
+        console.warn('fetchDepartmentLists: No token available');
         setDepartmentListsLoading(false);
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/subordinate-status`, {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/submissions/subordinate-status`;
+      console.log('fetchDepartmentLists: Making request to:', apiUrl);
+      
+      if (!process.env.NEXT_PUBLIC_API_URL) {
+        console.error('fetchDepartmentLists: NEXT_PUBLIC_API_URL environment variable is not set');
+        setDepartmentListsLoading(false);
+        return;
+      }
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -326,7 +340,9 @@ export function DeansOfficeProvider({ children }: { children: ReactNode }) {
       });
 
       if (response.ok) {
+        console.log('fetchDepartmentLists: Response received successfully');
         const apiData = await response.json();
+        console.log('fetchDepartmentLists: API data:', apiData);
         
         // Transform API response to match DepartmentList interface and fetch student counts
         const departmentListsData: DepartmentList[] = await Promise.all(
@@ -373,18 +389,40 @@ export function DeansOfficeProvider({ children }: { children: ReactNode }) {
           })
         );
         
+        console.log('fetchDepartmentLists: Setting department lists:', departmentListsData);
         setDepartmentLists(departmentListsData);
       } else {
-        const errorText = await response.text();
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch (textError) {
+          console.warn('Could not read response text:', textError);
+        }
+        
+        const errorMessage = errorText || `HTTP ${response.status} ${response.statusText}`;
+        
         if (response.status === 404 || errorText.includes("No static resource")) {
           console.warn('Dean office department lists API endpoint not implemented yet. Using empty department list.');
           setDepartmentLists([]);
         } else {
-          console.error('Failed to fetch department lists:', errorText);
+          console.error(`Failed to fetch department lists (${response.status}):`, errorMessage);
+          console.error('Response details:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            url: response.url
+          });
         }
       }
     } catch (error) {
       console.error('Error fetching department lists:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        apiUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/submissions/subordinate-status`
+      });
+      // Set empty list on error to prevent UI issues
+      setDepartmentLists([]);
     }
     
     setDepartmentListsLoading(false);

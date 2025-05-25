@@ -144,7 +144,6 @@ export default function DeansOfficeDashboard() {
       case "APPROVED_BY_ADVISOR":
       case "APPROVED_BY_DEPT":
       case "APPROVED_BY_DEAN":
-      case "GRADUATION_APPROVED":
         return "text-green-600";
       case "REJECTED_BY_ADVISOR":
       case "REJECTED_BY_DEPT":
@@ -398,9 +397,6 @@ export default function DeansOfficeDashboard() {
                     Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
-                    Students
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
@@ -419,26 +415,6 @@ export default function DeansOfficeDashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
                       {department.secretaryEmail}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-semibold">
-                            Total: {department.totalStudents}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
-                            ✓ {department.approvedStudents}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
-                            ✗ {department.rejectedStudents}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold">
-                            ⏳ {department.pendingStudents}
-                          </span>
-                        </div>
-                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {department.isFinalized ? (
@@ -465,7 +441,7 @@ export default function DeansOfficeDashboard() {
                 ))}
                 {filteredDepartmentLists.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                       {search ? "No departments found matching your search." : "No department lists found."}
                     </td>
                   </tr>
@@ -501,7 +477,7 @@ export default function DeansOfficeDashboard() {
                   student.status === 'APPROVED_BY_DEPT' ||
                   student.status === 'REJECTED_BY_DEPT'
                 ) ? (
-                  <p>• No students should have approved or rejected status</p>
+                  <p>• All students should be approved or rejected</p>
                 ) : null}
               </div>
             )}

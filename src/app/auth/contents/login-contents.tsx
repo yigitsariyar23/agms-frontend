@@ -124,11 +124,78 @@ const AuthPageContent = ({ onOpenResetModal, onShowError }: LoginContentsProps) 
   };
 
   return (
-    <div className="flex w-full h-full bg-[#FFFFFF] dark:bg-[#2E2E2E]">
-      {/* Left side - Form */}
-      <div className="w-full lg:w-1/2 bg-[#FFFFFF] dark:bg-[#2E2E2E] flex flex-col min-h-screen">
+    <div className="flex w-full h-full bg-[#FFFFFF] dark:bg-[#2E2E2E] relative overflow-hidden">
+      {/* Background shapes */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Large circle top-left */}
+        <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-gradient-to-br from-[#7A5FB8]/20 to-[#5B3E96]/10"></div>
+        
+        {/* Medium circle top-right */}
+        <div className="absolute top-10 right-20 w-32 h-32 rounded-full bg-gradient-to-bl from-[#9B7DC7]/15 to-[#7A5FB8]/20"></div>
+        
+        {/* Small circle middle-left */}
+        <div className="absolute top-1/3 -left-10 w-24 h-24 rounded-full bg-gradient-to-r from-[#5B3E96]/25 to-[#7A5FB8]/15"></div>
+        
+        {/* Large oval bottom-right */}
+        <div className="absolute -bottom-16 -right-16 w-48 h-32 rounded-full bg-gradient-to-tl from-[#7A5FB8]/20 to-[#9B7DC7]/10 transform rotate-45"></div>
+        
+        {/* Medium triangle-like shape */}
+        <div className="absolute bottom-1/4 left-1/4 w-20 h-20 bg-gradient-to-br from-[#5B3E96]/15 to-[#7A5FB8]/10 transform rotate-12 rounded-lg"></div>
+        
+        {/* Small floating shapes */}
+        <div className="absolute top-1/2 right-1/3 w-16 h-16 rounded-full bg-gradient-to-br from-[#9B7DC7]/20 to-[#5B3E96]/15"></div>
+        <div className="absolute top-3/4 left-1/3 w-12 h-12 bg-gradient-to-r from-[#7A5FB8]/25 to-[#5B3E96]/20 transform rotate-45 rounded-md"></div>
+        
+        {/* Additional decorative elements */}
+        <div className="absolute top-1/4 right-1/4 w-8 h-8 rounded-full bg-[#7A5FB8]/30"></div>
+        <div className="absolute bottom-1/3 right-1/2 w-6 h-6 rounded-full bg-[#9B7DC7]/25"></div>
+        <div className="absolute top-2/3 left-1/2 w-10 h-10 bg-gradient-to-br from-[#5B3E96]/20 to-[#7A5FB8]/15 transform rotate-30 rounded-lg"></div>
+        
+        {/* More decorative shapes */}
+        {/* Top area shapes */}
+        <div className="absolute top-5 left-1/4 w-14 h-14 rounded-full bg-gradient-to-r from-[#9B7DC7]/18 to-[#7A5FB8]/12"></div>
+        <div className="absolute top-16 right-1/3 w-18 h-18 bg-gradient-to-bl from-[#5B3E96]/22 to-[#9B7DC7]/15 transform rotate-60 rounded-2xl"></div>
+        <div className="absolute top-32 left-16 w-6 h-6 rounded-full bg-[#5B3E96]/35"></div>
+        
+        {/* Middle area shapes */}
+        <div className="absolute top-1/2 left-1/5 w-22 h-22 bg-gradient-to-tr from-[#7A5FB8]/20 to-[#5B3E96]/12 transform rotate-75 rounded-xl"></div>
+        <div className="absolute top-2/5 right-1/5 w-28 h-16 rounded-full bg-gradient-to-l from-[#9B7DC7]/15 to-[#7A5FB8]/20 transform rotate-30"></div>
+        <div className="absolute top-3/5 left-2/3 w-8 h-8 bg-[#9B7DC7]/28 transform rotate-45 rounded-md"></div>
+        <div className="absolute top-1/2 left-3/4 w-12 h-12 rounded-full bg-gradient-to-br from-[#5B3E96]/25 to-[#7A5FB8]/18"></div>
+        
+        {/* Bottom area shapes */}
+        <div className="absolute bottom-20 left-1/6 w-26 h-26 bg-gradient-to-tl from-[#7A5FB8]/18 to-[#9B7DC7]/12 transform rotate-15 rounded-3xl"></div>
+        <div className="absolute bottom-32 right-1/4 w-16 h-16 rounded-full bg-gradient-to-r from-[#5B3E96]/20 to-[#7A5FB8]/15"></div>
+        <div className="absolute bottom-10 left-1/2 w-10 h-10 bg-[#7A5FB8]/32 transform rotate-90 rounded-lg"></div>
+        <div className="absolute bottom-24 right-1/6 w-14 h-8 rounded-full bg-gradient-to-bl from-[#9B7DC7]/20 to-[#5B3E96]/15 transform rotate-45"></div>
+        
+        {/* Corner accent shapes */}
+        <div className="absolute top-1/4 left-1/6 w-4 h-4 rounded-full bg-[#5B3E96]/40"></div>
+        <div className="absolute top-3/4 right-1/5 w-5 h-5 bg-[#9B7DC7]/35 transform rotate-45 rounded-sm"></div>
+        <div className="absolute bottom-1/5 left-3/5 w-7 h-7 rounded-full bg-gradient-to-r from-[#7A5FB8]/30 to-[#5B3E96]/20"></div>
+        
+        {/* Scattered tiny shapes */}
+        <div className="absolute top-1/6 right-2/5 w-3 h-3 rounded-full bg-[#7A5FB8]/45"></div>
+        <div className="absolute top-5/6 left-1/5 w-4 h-4 bg-[#9B7DC7]/38 transform rotate-30 rounded-sm"></div>
+        <div className="absolute bottom-1/6 right-3/5 w-3 h-3 rounded-full bg-[#5B3E96]/42"></div>
+        <div className="absolute top-2/5 left-1/8 w-5 h-5 bg-gradient-to-br from-[#9B7DC7]/25 to-[#7A5FB8]/18 transform rotate-60 rounded-md"></div>
+        
+        {/* Elongated shapes for variety */}
+        <div className="absolute top-1/3 right-1/6 w-20 h-6 rounded-full bg-gradient-to-r from-[#5B3E96]/15 to-[#7A5FB8]/10 transform rotate-20"></div>
+        <div className="absolute bottom-2/5 left-1/8 w-6 h-24 rounded-full bg-gradient-to-b from-[#9B7DC7]/18 to-[#5B3E96]/12 transform rotate-35"></div>
+        <div className="absolute top-4/5 right-1/8 w-18 h-5 rounded-full bg-gradient-to-l from-[#7A5FB8]/20 to-[#9B7DC7]/15 transform rotate-70"></div>
+      </div>
+
+      {/* Centered login form */}
+      <div className="w-full flex flex-col min-h-screen relative z-10">
         <div className="flex-1 flex items-center justify-center flex-col">
-          <div className="text-[#5B3E96] dark:text-[#937DC7] text-3xl font-bold mb-8">AGMS</div>
+          <div className="mb-8">
+            <img 
+              src="/agms_logo.svg" 
+              alt="AGMS Logo" 
+              className="h-16 w-auto mx-auto"
+            />
+          </div>
           
           <div className="w-full px-6 max-w-sm mx-auto border-[#DCD9E4] dark:border-[#4A4A4A] pt-4 pb-4 rounded-4xl border-2 shadow-md bg-[#FFFFFF] dark:bg-[#3E3E3E] h-[400px]">
             <div className="space-y-3 p-2">
@@ -228,18 +295,6 @@ const AuthPageContent = ({ onOpenResetModal, onShowError }: LoginContentsProps) 
                   {isLoading ? 'Processing...' : 'Login'}
                 </button>
               </form>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Image only */}
-      <div className="hidden lg:block lg:w-1/2 relative p-8">
-        <div className="w-full h-full relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#7A5FB8] to-[#5B3E96]">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-white text-center">
-              <h1 className="text-4xl font-bold mb-4">Welcome to AGMS</h1>
-              <p className="text-xl opacity-90">Academic Graduation Management System</p>
             </div>
           </div>
         </div>

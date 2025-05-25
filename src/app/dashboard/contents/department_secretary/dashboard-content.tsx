@@ -400,9 +400,6 @@ export default function DepartmentSecretaryDashboard() {
                     Department
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
-                    Students
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#6D6D6D] dark:text-[#A9A9A9] uppercase tracking-wider">
@@ -421,26 +418,6 @@ export default function DepartmentSecretaryDashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
                       {advisor.department}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2E2E2E] dark:text-[#F4F2F9]">
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-semibold">
-                            Total: {advisor.totalStudents}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-semibold">
-                            ✓ {advisor.approvedStudents}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
-                            ✗ {advisor.rejectedStudents}
-                          </span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-semibold">
-                            ⏳ {advisor.pendingStudents}
-                          </span>
-                        </div>
-                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {advisor.isFinalized ? (
@@ -467,7 +444,7 @@ export default function DepartmentSecretaryDashboard() {
                 ))}
                 {filteredAdvisorLists.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                       {search ? "No advisors found matching your search." : "No advisor lists found."}
                     </td>
                   </tr>
@@ -503,7 +480,7 @@ export default function DepartmentSecretaryDashboard() {
                   student.status === 'APPROVED_BY_ADVISOR' ||
                   student.status === 'REJECTED_BY_ADVISOR'
                 ) ? (
-                  <p>• No students should have approved or rejected status</p>
+                  <p>• All students should be approved or rejected</p>
                 ) : null}
               </div>
             )}
