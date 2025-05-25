@@ -7,12 +7,6 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 export default [
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
-    plugins: {
-      '@typescript-eslint': tsPlugin,
-      'react': reactPlugin,
-      'react-hooks': reactHooksPlugin,
-      '@next/next': nextPlugin,
-    },
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -23,6 +17,12 @@ export default [
         },
       },
     },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+      'react': reactPlugin,
+      'react-hooks': reactHooksPlugin,
+      '@next/next': nextPlugin,
+    },
     settings: {
       react: {
         version: 'detect',
@@ -32,6 +32,10 @@ export default [
       },
     },
     rules: {
+      // Next.js rules
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs['core-web-vitals'].rules,
+
       // TypeScript specific rules
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -42,13 +46,13 @@ export default [
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react/no-unescaped-entities': 'off',
+      ...reactHooksPlugin.configs.recommended.rules,
 
       // General rules
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
   {
-    files: ['**/*.{js,jsx,ts,tsx}'],
-    ignores: ['node_modules/**', '.next/**', 'out/**'],
+    ignores: ['node_modules/**', '.next/**', 'out/**', '*.config.js'],
   },
 ]; 
