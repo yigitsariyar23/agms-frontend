@@ -21,6 +21,7 @@ interface DepartmentSecretaryContextType {
   finalizeList: () => Promise<void>;
   canFinalize: () => boolean;
   isListFinalized: boolean;
+  checkListFinalized: () => Promise<void>;
 }
 
 const DepartmentSecretaryContext = createContext<DepartmentSecretaryContextType | undefined>(undefined);
@@ -405,6 +406,35 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
     return allAdvisorListsFinalized && !hasApprovedOrRejectedStudents;
   };
 
+  const checkListFinalized = async (): Promise<void> => {
+    try {
+      const token = getToken();
+      if (!token) {
+        console.error('No token available');
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/my-list/finalized`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setIsListFinalized(data || false);
+      } else {
+        console.error('Failed to check list finalized status:', await response.text());
+        // Keep current state if API call fails
+      }
+    } catch (error) {
+      console.error('Error checking list finalized status:', error);
+      // Keep current state if API call fails
+    }
+  };
+
   const finalizeList = async (): Promise<void> => {
     // Validate finalization conditions
     if (!canFinalize()) {
@@ -441,7 +471,7 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
         return;
       }
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/department-secretary/${secretaryId}/finalize`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/finalize-my-list`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -475,6 +505,7 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
     if (secretaryProfile && user && (user.role === 'DEPARTMENT_SECRETARY' || user.role === 'ROLE_DEPARTMENT_SECRETARY')) {
       fetchStudents();
       fetchAdvisorLists();
+      checkListFinalized();
     }
   }, [secretaryProfile]);
 
@@ -492,6 +523,7 @@ export function DepartmentSecretaryProvider({ children }: { children: ReactNode 
     finalizeList,
     canFinalize,
     isListFinalized,
+    checkListFinalized,
   };
 
   return <DepartmentSecretaryContext.Provider value={value}>{children}</DepartmentSecretaryContext.Provider>;

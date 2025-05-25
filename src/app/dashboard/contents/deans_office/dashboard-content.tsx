@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,7 +37,8 @@ export default function DeansOfficeDashboard() {
     declineStudent, 
     finalizeList, 
     canFinalize,
-    isListFinalized 
+    isListFinalized,
+    checkListFinalized 
   } = useDeansOffice();
   
   const [search, setSearch] = useState("");
@@ -46,6 +47,11 @@ export default function DeansOfficeDashboard() {
   const [sortBy, setSortBy] = useState<keyof SubmissionDetails | null>("studentNumber");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [gpaLoadingStates, setGpaLoadingStates] = useState<Record<string, boolean>>({});
+
+  // Check list finalized status on component mount
+  useEffect(() => {
+    checkListFinalized();
+  }, [checkListFinalized]);
 
   const handleSort = (field: keyof SubmissionDetails) => {
     if (sortBy === field) {

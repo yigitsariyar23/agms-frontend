@@ -37,7 +37,8 @@ export default function StudentAffairsDashboard() {
     declineStudent, 
     finalizeList, 
     canFinalize,
-    isListFinalized 
+    isListFinalized,
+    checkListFinalized 
   } = useStudentAffairs();
   
   const [search, setSearch] = useState("");
@@ -58,6 +59,11 @@ export default function StudentAffairsDashboard() {
   useEffect(() => {
     checkExistingGraduation();
   }, []);
+
+  // Check list finalized status on component mount
+  useEffect(() => {
+    checkListFinalized();
+  }, [checkListFinalized]);
 
   const handleSort = (field: keyof SubmissionDetails) => {
     if (sortBy === field) {

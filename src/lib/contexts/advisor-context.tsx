@@ -16,6 +16,7 @@ interface AdvisorContextType {
   declineStudent: (submissionId: string, reason: string) => Promise<void>;
   finalizeList: () => Promise<void>;
   isListFinalized: boolean;
+  checkListFinalized: () => Promise<void>;
 }
 
 const AdvisorContext = createContext<AdvisorContextType | undefined>(undefined);
@@ -334,6 +335,36 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const checkListFinalized = async (): Promise<void> => {
+    try {
+      const token = getToken();
+      if (!token) {
+        console.error('No token available');
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/my-list/finalized`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        setIsListFinalized(data || false);
+      } else {
+        console.error('Failed to check list finalized status:', await response.text());
+        // Keep current state if API call fails
+      }
+    } catch (error) {
+      console.error('Error checking list finalized status:', error);
+      // Keep current state if API call fails
+    }
+  };
+
   useEffect(() => {
     if (user && (user.role === 'ADVISOR' || user.role === 'ROLE_ADVISOR')) {
       fetchAdvisorProfile();
@@ -346,6 +377,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (advisorProfile && user && (user.role === 'ADVISOR' || user.role === 'ROLE_ADVISOR')) {
       fetchStudents();
+      checkListFinalized();
     }
   }, [advisorProfile]);
 
@@ -359,6 +391,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     declineStudent,
     finalizeList,
     isListFinalized,
+    checkListFinalized,
   };
 
   return <AdvisorContext.Provider value={value}>{children}</AdvisorContext.Provider>;

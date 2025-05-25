@@ -21,6 +21,7 @@ interface DeansOfficeContextType {
   finalizeList: () => Promise<void>;
   canFinalize: () => boolean;
   isListFinalized: boolean;
+  checkListFinalized: () => Promise<void>;
 }
 
 const DeansOfficeContext = createContext<DeansOfficeContextType | undefined>(undefined);
@@ -443,6 +444,36 @@ export function DeansOfficeProvider({ children }: { children: ReactNode }) {
     return allDepartmentListsFinalized && !hasApprovedOrRejectedStudents;
   };
 
+  const checkListFinalized = async (): Promise<void> => {
+    try {
+      const token = getToken();
+      if (!token) {
+        console.error('No token available');
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/my-list/finalized`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        setIsListFinalized(data || false);
+      } else {
+        console.error('Failed to check list finalized status:', await response.text());
+        // Keep current state if API call fails
+      }
+    } catch (error) {
+      console.error('Error checking list finalized status:', error);
+      // Keep current state if API call fails
+    }
+  };
+
   const finalizeList = async (): Promise<void> => {
     // Validate finalization conditions
     if (!canFinalize()) {
@@ -513,6 +544,7 @@ export function DeansOfficeProvider({ children }: { children: ReactNode }) {
     if (deanProfile && user && (user.role === 'DEAN_OFFICER' || user.role === 'ROLE_DEANS_OFFICE')) {
       fetchStudents();
       fetchDepartmentLists();
+      checkListFinalized();
     }
   }, [deanProfile]);
 
@@ -530,6 +562,7 @@ export function DeansOfficeProvider({ children }: { children: ReactNode }) {
     finalizeList,
     canFinalize,
     isListFinalized,
+    checkListFinalized,
   };
 
   return <DeansOfficeContext.Provider value={value}>{children}</DeansOfficeContext.Provider>;

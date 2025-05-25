@@ -21,6 +21,7 @@ interface StudentAffairsContextType {
   finalizeList: () => Promise<void>;
   canFinalize: () => boolean;
   isListFinalized: boolean;
+  checkListFinalized: () => Promise<void>;
 }
 
 const StudentAffairsContext = createContext<StudentAffairsContextType | undefined>(undefined);
@@ -224,7 +225,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
         setStudents(prev => 
           prev.map(student => 
             student.submissionId === submissionId 
-              ? { ...student, status: 'GRADUATION_APPROVED' } 
+              ? { ...student, status: 'FINAL_APPROVED' } 
               : student
           )
         );
@@ -396,7 +397,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
     
     // Check if there are no students with approved or rejected status (only pending or not requested)
     const hasApprovedOrRejectedStudents = students.some(student => 
-      student.status === 'GRADUATION_APPROVED' || 
+      student.status === 'FINAL_APPROVED' || 
       student.status === 'STUDENT_AFFAIRS_REJECTED' ||
       student.status === 'APPROVED_BY_DEAN' ||
       student.status === 'REJECTED_BY_DEAN'
@@ -405,12 +406,42 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
     return allDeanListsFinalized && !hasApprovedOrRejectedStudents;
   };
 
+  const checkListFinalized = async (): Promise<void> => {
+    try {
+      const token = getToken();
+      if (!token) {
+        console.error('No token available');
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/my-list/finalized`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        setIsListFinalized(data || false);
+      } else {
+        console.error('Failed to check list finalized status:', await response.text());
+        // Keep current state if API call fails
+      }
+    } catch (error) {
+      console.error('Error checking list finalized status:', error);
+      // Keep current state if API call fails
+    }
+  };
+
   const finalizeList = async (): Promise<void> => {
     // Validate finalization conditions
     if (!canFinalize()) {
       const allDeanListsFinalized = deanLists.length > 0 && deanLists.every(dean => dean.isFinalized);
       const hasApprovedOrRejectedStudents = students.some(student => 
-        student.status === 'GRADUATION_APPROVED' || 
+        student.status === 'FINAL_APPROVED' || 
         student.status === 'STUDENT_AFFAIRS_REJECTED' ||
         student.status === 'APPROVED_BY_DEAN' ||
         student.status === 'REJECTED_BY_DEAN'
@@ -475,6 +506,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
     if (staffProfile && user && (user.role === 'STUDENT_AFFAIRS' || user.role === 'ROLE_STUDENT_AFFAIRS')) {
       fetchStudents();
       fetchDeanLists();
+      checkListFinalized();
     }
   }, [staffProfile]);
 
@@ -492,6 +524,7 @@ export function StudentAffairsProvider({ children }: { children: ReactNode }) {
     finalizeList,
     canFinalize,
     isListFinalized,
+    checkListFinalized,
   };
 
   return <StudentAffairsContext.Provider value={value}>{children}</StudentAffairsContext.Provider>;

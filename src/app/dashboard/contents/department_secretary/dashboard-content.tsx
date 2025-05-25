@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,10 +21,26 @@ import { SubmissionDetails } from "@/lib/types/submission-details";
 import { useUser } from "@/lib/contexts/user-context";
 import { ViewStudentInfoDialog } from "@/components/student/view-student-info-dialog";
 import { CheckCircle, XCircle } from "lucide-react";
+import { getToken } from "@/lib/utils/jwt";
 
 interface ModalState {
-  type: "accept" | "decline" | "info" | "finalize";
+  type: "accept" | "decline" | "info" | "finalize" | "top-students";
   student?: SubmissionDetails;
+}
+
+interface TopStudent {
+  studentNumber: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  department: string;
+  faculty: string;
+  gpa: number;
+  totalCredits: number;
+  semester: number;
+  rank: number;
+  advisorName: string;
+  advisorEmpId: string;
 }
 
 export default function DepartmentSecretaryDashboard() {
@@ -38,7 +54,8 @@ export default function DepartmentSecretaryDashboard() {
     declineStudent, 
     finalizeList, 
     canFinalize,
-    isListFinalized 
+    isListFinalized,
+    checkListFinalized 
   } = useDepartmentSecretary();
   
   const [search, setSearch] = useState("");
@@ -47,7 +64,13 @@ export default function DepartmentSecretaryDashboard() {
   const [sortBy, setSortBy] = useState<keyof SubmissionDetails | null>("studentNumber");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [gpaLoadingStates, setGpaLoadingStates] = useState<Record<string, boolean>>({});
+  const [topStudents, setTopStudents] = useState<TopStudent[]>([]);
+  const [topStudentsLoading, setTopStudentsLoading] = useState(false);
 
+  // Check list finalized status on component mount
+  useEffect(() => {
+    checkListFinalized();
+  }, [checkListFinalized]);
 
   const handleSort = (field: keyof SubmissionDetails) => {
     if (sortBy === field) {
@@ -113,6 +136,12 @@ export default function DepartmentSecretaryDashboard() {
   };
 
   const handleFinalize = () => {
+    // Prevent action if list is already finalized
+    if (isListFinalized) {
+      toast.info("List is already finalized");
+      return;
+    }
+
     if (!canFinalize()) {
       const allAdvisorListsFinalized = advisorLists.length > 0 && advisorLists.every(advisor => advisor.isFinalized);
       const hasApprovedOrRejectedStudents = students.some(student => 
@@ -164,7 +193,7 @@ export default function DepartmentSecretaryDashboard() {
     setGpaLoadingStates(prev => ({ ...prev, [student.submissionId]: true }));
     
     try {
-      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      const token = getToken();
       if (!token) {
         console.error('No token available');
         return;
@@ -191,6 +220,43 @@ export default function DepartmentSecretaryDashboard() {
       console.error('Error refreshing GPA data:', error);
     } finally {
       setGpaLoadingStates(prev => ({ ...prev, [student.submissionId]: false }));
+    }
+  };
+
+  const fetchTopStudents = async () => {
+    setTopStudentsLoading(true);
+    
+    try {
+      const token = getToken();
+      if (!token) {
+        console.error('No token available');
+        toast.error('Authentication required');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/submissions/top-students`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        setTopStudents(data.topStudents || []);
+        setModal({ type: "top-students" });
+      } else {
+        console.error('Failed to fetch top students');
+        toast.error('Failed to fetch top students');
+      }
+    } catch (error) {
+      console.error('Error fetching top students:', error);
+      toast.error('Error fetching top students');
+    } finally {
+      setTopStudentsLoading(false);
     }
   };
 
@@ -230,6 +296,24 @@ export default function DepartmentSecretaryDashboard() {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full mb-6 bg-[#FFFFFF] dark:bg-[#3E3E3E] text-[#2E2E2E] dark:text-[#F4F2F9] border-[#DCD9E4] dark:border-[#4A4A4A] focus:ring-2 focus:ring-[#5B3E96] dark:focus:ring-[#937DC7]"
         />
+
+        {/* Top Students Button */}
+        <div className="mb-6">
+          <Button
+            onClick={fetchTopStudents}
+            disabled={topStudentsLoading}
+            className="bg-[#5B3E96] hover:bg-[#4A2F7A] text-white"
+          >
+            {topStudentsLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Loading...
+              </div>
+            ) : (
+              "View Top 3 Students"
+            )}
+          </Button>
+        </div>
 
         {/* Students Table */}
         <div className="mb-8">
@@ -316,7 +400,7 @@ export default function DepartmentSecretaryDashboard() {
                       <Button
                         size="sm"
                         className={
-                          student.status !== "APPROVED_BY_ADVISOR"
+                          student.status !== "APPROVED_BY_ADVISOR" || isListFinalized
                             ? "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
                             : "bg-gray-800 hover:bg-gray-900"
                         }
@@ -331,7 +415,7 @@ export default function DepartmentSecretaryDashboard() {
                         size="sm"
                         variant="destructive"
                         className={
-                          student.status !== "APPROVED_BY_ADVISOR"
+                          student.status !== "APPROVED_BY_ADVISOR" || isListFinalized
                             ? "bg-red-300 cursor-not-allowed hover:bg-red-300"
                             : ""
                         }
@@ -456,36 +540,41 @@ export default function DepartmentSecretaryDashboard() {
         </div>
 
         {/* Finalize Button */}
-        {!isListFinalized && (
-          <div className="space-y-2 mt-8">
-            <Button 
-              onClick={handleFinalize}
-              disabled={!canFinalize()}
-              className={`w-full ${
-                canFinalize() 
+        <div className="space-y-2 mt-8">
+          <Button 
+            onClick={handleFinalize}
+            disabled={!canFinalize() || isListFinalized}
+            className={`w-full ${
+              isListFinalized
+                ? "bg-green-600 cursor-not-allowed hover:bg-green-600"
+                : canFinalize() 
                   ? "bg-gray-800 hover:bg-gray-900" 
                   : "bg-gray-400 cursor-not-allowed hover:bg-gray-400"
-              }`}
-            >
-              Finalize List
-            </Button>
-            {!canFinalize() && (
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {advisorLists.length === 0 || !advisorLists.every(advisor => advisor.isFinalized) ? (
-                  <p>• All advisor lists must be finalized first</p>
-                ) : null}
-                {students.some(student => 
-                  student.status === 'APPROVED_BY_DEPT' || 
-                  student.status === 'REJECTED_BY_DEPT' ||
-                  student.status === 'APPROVED_BY_ADVISOR' ||
-                  student.status === 'REJECTED_BY_ADVISOR'
-                ) ? (
-                  <p>• All students should be approved or rejected</p>
-                ) : null}
-              </div>
-            )}
-          </div>
-        )}
+            }`}
+          >
+            {isListFinalized ? "List Already Finalized" : "Finalize List"}
+          </Button>
+          {!canFinalize() && !isListFinalized && (
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {advisorLists.length === 0 || !advisorLists.every(advisor => advisor.isFinalized) ? (
+                <p>• All advisor lists must be finalized first</p>
+              ) : null}
+              {students.some(student => 
+                student.status === 'APPROVED_BY_DEPT' || 
+                student.status === 'REJECTED_BY_DEPT' ||
+                student.status === 'APPROVED_BY_ADVISOR' ||
+                student.status === 'REJECTED_BY_ADVISOR'
+              ) ? (
+                <p>• All students should be approved or rejected</p>
+              ) : null}
+            </div>
+          )}
+          {isListFinalized && (
+            <div className="text-sm text-green-600 dark:text-green-400">
+              <p>✓ The list has been finalized and sent to dean's office</p>
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Modals */}
@@ -567,6 +656,73 @@ export default function DepartmentSecretaryDashboard() {
               <Button onClick={confirmFinalize} className="bg-gray-800 hover:bg-gray-900">
                 Finalize List
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {modal && modal.type === "top-students" && (
+        <Dialog open onOpenChange={() => setModal(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Top 3 Students</DialogTitle>
+              <DialogDescription>
+                Students with the highest GPA in the department
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {topStudents.length > 0 ? (
+                <div className="space-y-4">
+                  {topStudents.map((student, index) => (
+                    <div 
+                      key={student.studentNumber} 
+                      className="flex items-center justify-between p-4 bg-[#F4F2F9] dark:bg-[#4A4A4A] rounded-lg border border-[#DCD9E4] dark:border-[#5C5C5C]"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center w-8 h-8 bg-[#5B3E96] text-white rounded-full font-bold">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-[#2E2E2E] dark:text-[#F4F2F9]">
+                            {student.firstName} {student.lastName}
+                          </div>
+                          <div className="text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">
+                            {student.studentNumber}
+                          </div>
+                          <div className="text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">
+                            {student.department}
+                          </div>
+                          <div className="text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">
+                            Semester: {student.semester} | Credits: {student.totalCredits}
+                          </div>
+                          {student.advisorName && (
+                            <div className="text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">
+                              Advisor: {student.advisorName}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-[#5B3E96]">
+                          {student.gpa.toFixed(2)}
+                        </div>
+                        <div className="text-sm text-[#6D6D6D] dark:text-[#A9A9A9]">
+                          GPA
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[#6D6D6D] dark:text-[#A9A9A9]">
+                  No top students data available
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Close</Button>
+              </DialogClose>
             </DialogFooter>
           </DialogContent>
         </Dialog>
