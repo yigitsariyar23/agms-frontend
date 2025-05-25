@@ -346,7 +346,7 @@ export default function FileUploadCard({ submissionId, userRole, canDeleteFiles 
             <input
               id="file-upload-input"
               type="file"
-              accept=".pdf,.png"
+              accept=".pdf"
               className="hidden"
               onChange={handleFileChange}
               disabled={isUploading}
@@ -365,7 +365,7 @@ export default function FileUploadCard({ submissionId, userRole, canDeleteFiles 
                   Click to upload or drag and drop
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  PDF or PNG (Max {MAX_FILE_SIZE_MB}MB)
+                  PDF  (Max {MAX_FILE_SIZE_MB}MB)
                 </span>
               </div>
             )}
@@ -394,16 +394,16 @@ export default function FileUploadCard({ submissionId, userRole, canDeleteFiles 
                   key={file.fileId}
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                 >
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-5 h-5 text-purple-600" />
-                    <div>
-                      <p className="text-sm font-medium">{file.fileName}</p>
-                      <p className="text-xs text-muted-foreground">
+                  <div className="flex flex-1 min-w-0 items-center space-x-2">
+                    <FileText className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" title={file.fileName}>{file.fileName}</p>
+                      <p className="text-xs text-muted-foreground truncate">
                         Uploaded by {file.uploaderName} on {new Date(file.uploadDate).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-shrink-0 space-x-2">
                     <Button
                       variant="ghost"
                       size="sm"
