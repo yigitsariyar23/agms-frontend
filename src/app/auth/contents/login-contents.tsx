@@ -3,7 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth-context';
+import Image from 'next/image';
 import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from 'lucide-react';
+import agmsLogo from '@/public/agms_logo.svg';
 
 // Loading component
 const AuthPageLoading = () => (
@@ -190,10 +192,12 @@ const AuthPageContent = ({ onOpenResetModal, onShowError }: LoginContentsProps) 
       <div className="w-full flex flex-col min-h-screen relative z-10">
         <div className="flex-1 flex items-center justify-center flex-col">
           <div className="mb-8">
-            <img 
-              src="/agms_logo.svg" 
-              alt="AGMS Logo" 
-              className="h-16 w-auto mx-auto"
+            <Image
+              src={agmsLogo}
+              alt="AGMS Logo"
+              width={100}
+              height={100}
+              className="mx-auto"
             />
           </div>
           

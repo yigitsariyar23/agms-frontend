@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-
+import iyteLogo from '@/public/iyte-logo.png';
 // Add Avatar component
 function UserAvatar({ firstName, lastName }: { firstName?: string; lastName?: string }) {
   const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase()
@@ -44,7 +44,7 @@ export function Header({ className }: HeaderProps) {
         {/* Left: Logo and AGMS */}
         <div className="flex items-center gap-2">
           <div className="flex items-center space-x-2 sm:space-x-6">
-            <Image src="/iyte-logo.png" alt="IYTE Logo" className="h-8 w-8 sm:h-12 sm:w-12 object-contain" width={360} height={360} />
+            <Image src={iyteLogo} alt="IYTE Logo" className="h-8 w-8 sm:h-12 sm:w-12 object-contain" width={360} height={360} />
             <span className="font-bold text-lg sm:text-xl">AGMS</span>
           </div>
         </div>
